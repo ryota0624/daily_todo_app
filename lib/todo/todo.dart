@@ -1,3 +1,4 @@
+import 'dart:js_util';
 import 'dart:math';
 
 import 'package:daily_todo_app/todo/label.dart';
@@ -134,10 +135,14 @@ class TodoLabelsListImpl extends TodoLabels {
 
 abstract class Status {
   Status start();
-
   Status complete();
-
   Status cancel();
+
+  bool isCompleted();
+  bool isCanceled();
+  bool isFinished() {
+    return this is Completed || this is Cancelled;
+  }
 }
 
 class NotStartedYet extends Status {
@@ -147,6 +152,12 @@ class NotStartedYet extends Status {
 
   Completed complete() =>
       Completed(startedAt: DateTime.now(), completedAt: DateTime.now());
+
+  @override
+  bool isCanceled() => false;
+
+  @override
+  bool isCompleted() => false;
 }
 
 class InProgress extends Status {
@@ -161,6 +172,11 @@ class InProgress extends Status {
       Cancelled(startedAt: startedAt, cancelledAt: DateTime.now());
 
   Status start() => this;
+
+  @override
+  bool isCanceled() => false;
+  @override
+  bool isCompleted() => false;
 }
 
 class Completed extends Status {
@@ -178,6 +194,11 @@ class Completed extends Status {
 
   @override
   Status start() => this;
+
+  @override
+  bool isCanceled() => false;
+  @override
+  bool isCompleted() => true;
 }
 
 class Cancelled extends Status {
@@ -195,4 +216,10 @@ class Cancelled extends Status {
 
   @override
   Status start() => this;
+
+  @override
+  bool isCanceled() => true;
+
+  @override
+  bool isCompleted() => false;
 }
