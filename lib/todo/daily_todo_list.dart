@@ -26,9 +26,20 @@ class DailyTodoList {
     return DailyTodoList(_date, remainedTodos);
   }
 
+  DailyTodoList addTodo(Todo todo) {
+    final copied = _list.toList();
+    copied.add(todo);
+    return DailyTodoList(_date, copied);
+  }
+
+  DailyTodoList modifyTodo(Todo todo) {
+    final modified = _list.map((t) => t.id() == todo.id() ? todo : t).toList();
+    return DailyTodoList(_date, modified);
+  }
+
+  bool isAllTodoFinished() => _list.every((el) => el.isFinished());
+
   factory DailyTodoList.initialize(Date date) {
     return DailyTodoList(date, []);
   }
-
-  isAllTodoFinished() => _list.every((el) => el.isFinished());
 }
