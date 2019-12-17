@@ -6,10 +6,18 @@ abstract class InputPort<I> {
   Future<I> getSingleInput() => getInput().single;
 }
 
-abstract class OutputPort<O> {}
+abstract class OutputPort<O> {
+  execute(O output);
+  OutputPortPerformed perform(O output) {
+    execute(output);
+    return OutputPortPerformed();
+  }
+}
+
+class OutputPortPerformed {}
 
 abstract class UseCase<I, O> {
   final OutputPort<O> outputPort;
   UseCase(this.outputPort);
-  execute(InputPort<I> inputPort);
+  Future<OutputPortPerformed> execute(InputPort<I> inputPort);
 }

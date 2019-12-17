@@ -33,6 +33,8 @@ class TodoBuilder {
     return Todo(id, _labelsFactory.create(_labels), _subject, _description,
         status, createdAt);
   }
+
+  TodoBuilder initialize() => TodoBuilder(_timeGetter, _labelsFactory);
 }
 
 abstract class TimeGetter {

@@ -15,7 +15,10 @@ class ID<E> {
   static ID<E> create<E>() => fromString(Random(999).nextDouble().toString());
 }
 
-class Subject {}
+class Subject {
+  final String _text;
+  Subject(this._text);
+}
 
 class Description {}
 
@@ -171,4 +174,10 @@ class Cancelled extends Status {
 
   @override
   bool isCompleted() => false;
+}
+
+
+abstract class TodoCollection {
+  Future<void> store(Todo todo);
+  Future<Todo> get(ID<Todo> id);
 }
