@@ -17,15 +17,15 @@ class CreateTodoResult {
 }
 
 class CreateTodo extends UseCase<CreateTodoParam, CreateTodoResult> {
-  final TodoBuilder _todoBuilder; // TODO: Builder -> Factory
+  final TodoFactory _todoFactory;
   final TodoCollection _todoCollection;
 
   CreateTodo(
-      {TodoBuilder todoBuilder,
+      {TodoFactory todoBuilder,
       TodoCollection todoCollection,
       OutputPort<CreateTodoResult> outputPort})
       : _todoCollection = todoCollection,
-        _todoBuilder = todoBuilder,
+        _todoFactory = todoBuilder,
         super(outputPort);
 
   @override
@@ -35,7 +35,7 @@ class CreateTodo extends UseCase<CreateTodoParam, CreateTodoResult> {
     List<Label> labels = [];
 
     final todo =
-        _todoBuilder.initialize().subject(subject).labels(labels).build();
+        _todoFactory.create(subject: subject, labels: labels);
 
     await _todoCollection.store(todo);
 

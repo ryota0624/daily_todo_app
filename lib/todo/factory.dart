@@ -1,40 +1,22 @@
 import 'package:daily_todo_app/todo/todo.dart';
 import 'package:daily_todo_app/todo/label.dart';
 
-class TodoBuilder {
+class TodoFactory {
   final TimeGetter _timeGetter;
   final TodoLabelsFactory<List<Label>> _labelsFactory;
+  TodoFactory(this._timeGetter, this._labelsFactory);
 
-  Subject _subject;
-  Description _description;
-  List<Label> _labels;
-
-  TodoBuilder(this._timeGetter, this._labelsFactory);
-
-  TodoBuilder labels(List<Label> list) {
-    _labels = list;
-    return this;
-  }
-
-  TodoBuilder subject(Subject sub) {
-    _subject = sub;
-    return this;
-  }
-
-  TodoBuilder description(Description des) {
-    _description = des;
-    return this;
-  }
-
-  Todo build() {
+  Todo create({
+    Subject subject,
+    Description description,
+    List<Label> labels,
+  })  {
     final id = ID.create();
     final status = NotStartedYet();
     final createdAt = _timeGetter.now();
-    return Todo(id, _labelsFactory.create(_labels), _subject, _description,
+    return Todo(id, _labelsFactory.create(labels), subject, description,
         status, createdAt);
   }
-
-  TodoBuilder initialize() => TodoBuilder(_timeGetter, _labelsFactory);
 }
 
 abstract class TimeGetter {
