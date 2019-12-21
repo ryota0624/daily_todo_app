@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 abstract class InputPort<I> {
   put(I input);
   Stream<I> getInput();
@@ -17,7 +19,7 @@ abstract class OutputPort<O> {
 class OutputPortPerformed {}
 
 abstract class UseCase<I, O> {
-  final OutputPort<O> outputPort;
+  @protected final OutputPort<O> outputPort;
   UseCase(this.outputPort);
   Future<OutputPortPerformed> execute(InputPort<I> inputPort);
 }

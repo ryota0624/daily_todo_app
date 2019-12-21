@@ -1,3 +1,4 @@
+import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(MyApp());
@@ -91,6 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            TodoCreateForm(),
             Text(
               'You have pushed the button this many times:',
             ),

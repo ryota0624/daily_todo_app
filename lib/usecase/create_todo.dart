@@ -1,5 +1,6 @@
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
+import 'package:meta/meta.dart';
 
 class CreateTodoParam {
   final String subject;
@@ -19,21 +20,21 @@ class CreateTodo extends UseCase<CreateTodoParam, CreateTodoResult> {
   final TodoCollection _todoCollection;
 
   CreateTodo(
-      {TodoFactory todoBuilder,
-      TodoCollection todoCollection,
-      OutputPort<CreateTodoResult> outputPort})
+      {@required TodoFactory todoFactory,
+      @required TodoCollection todoCollection,
+      @required OutputPort<CreateTodoResult> outputPort})
       : _todoCollection = todoCollection,
-        _todoFactory = todoBuilder,
+        _todoFactory = todoFactory,
         super(outputPort);
 
   @override
-  Future<OutputPortPerformed> execute(InputPort<CreateTodoParam> inputPort) async {
+  Future<OutputPortPerformed> execute(
+      InputPort<CreateTodoParam> inputPort) async {
     var input = await inputPort.getSingleInput();
     Subject subject = Subject(input.subject);
     List<Label> labels = [];
 
-    final todo =
-        _todoFactory.create(subject: subject, labels: labels);
+    final todo = _todoFactory.create(subject: subject, labels: labels);
 
     await _todoCollection.store(todo);
 
