@@ -20,7 +20,13 @@ class Subject {
   Subject(this._text);
 }
 
-class Description {}
+abstract class Description {
+  bool isEmpty();
+}
+
+class EmptyDescription extends Description {
+  bool isEmpty() => true;
+}
 
 class Todo {
   final ID<Todo> _id;
@@ -97,7 +103,7 @@ abstract class Status {
   }
 }
 
-class NotStartedYet extends Status {
+class NotStarted extends Status {
   InProgress start() => InProgress(DateTime.now());
 
   cancel() => Cancelled(startedAt: DateTime.now(), cancelledAt: DateTime.now());
