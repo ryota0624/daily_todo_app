@@ -1,6 +1,4 @@
-import 'package:daily_todo_app/todo/factory.dart'; // TODO: importをまとめたい
-import 'package:daily_todo_app/todo/label.dart';
-import 'package:daily_todo_app/todo/todo.dart';
+import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 
 class CreateTodoParam {
