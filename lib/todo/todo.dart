@@ -17,11 +17,21 @@ class ID<E> {
 
 class Subject {
   final String _text;
+
   Subject(this._text);
 }
 
 abstract class Description {
   bool isEmpty();
+}
+
+class TextDescription extends Description {
+  final String _text;
+
+  TextDescription(this._text);
+
+  @override
+  bool isEmpty() => _text.isEmpty;
 }
 
 class EmptyDescription extends Description {
@@ -53,6 +63,8 @@ class Todo {
 
   bool isFinished() => status().isFinished();
 
+  bool hasLabel(Label label) => labels().contains(label);
+
   Todo _changeStatus(Status status) =>
       Todo(_id, _labels, _subject, _description, status, _createdAt);
 
@@ -63,7 +75,7 @@ class Todo {
   Todo changeSubject(Subject s) =>
       Todo(_id, _labels, s, _description, _status, _createdAt);
 
-  Todo addDescription(Description d) =>
+  Todo changeDescription(Description d) =>
       Todo(_id, _labels, _subject, d, _status, _createdAt);
 
   Todo addLabel(Label l) =>
@@ -74,6 +86,8 @@ abstract class TodoLabels {
   Iterable<Label> values();
 
   TodoLabels add(Label label);
+
+  bool contains(label);
 }
 
 class TodoLabelsListImpl extends TodoLabels {
@@ -84,20 +98,28 @@ class TodoLabelsListImpl extends TodoLabels {
   @override
   TodoLabels add(Label label) {
     var copied = _list.toList();
+    copied.add(label);
     return TodoLabelsListImpl(copied);
   }
 
   @override
   Iterable<Label> values() => _list;
+
+  @override
+  bool contains(label) => _list.contains(label);
 }
 
 abstract class Status {
   Status start();
+
   Status complete();
+
   Status cancel();
 
   bool isCompleted();
+
   bool isCanceled();
+
   bool isFinished() {
     return this is Completed || this is Cancelled;
   }
@@ -133,6 +155,7 @@ class InProgress extends Status {
 
   @override
   bool isCanceled() => false;
+
   @override
   bool isCompleted() => false;
 }
@@ -155,6 +178,7 @@ class Completed extends Status {
 
   @override
   bool isCanceled() => false;
+
   @override
   bool isCompleted() => true;
 }
@@ -182,8 +206,8 @@ class Cancelled extends Status {
   bool isCompleted() => false;
 }
 
-
 abstract class TodoCollection {
   Future<void> store(Todo todo);
+
   Future<Todo> get(ID<Todo> id);
 }
