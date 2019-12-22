@@ -10,4 +10,9 @@ class TodoCollectionOnMap extends TodoCollection {
   Future<void> store(Todo todo) async {
     _map.addEntries([MapEntry(todo.id(), todo)]);
   }
+
+  @override
+  Future<List<Todo>> getAll() async {
+    return _map.values.toList();
+  }
 }

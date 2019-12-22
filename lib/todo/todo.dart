@@ -19,6 +19,9 @@ class Subject {
   final String _text;
 
   Subject(this._text);
+
+  @override
+  String toString() => _text;
 }
 
 abstract class Description {
@@ -210,4 +213,5 @@ abstract class TodoCollection {
   Future<void> store(Todo todo);
 
   Future<Todo> get(ID<Todo> id);
+  Future<List<Todo>> getAll();
 }
