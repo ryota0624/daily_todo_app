@@ -1,30 +1,19 @@
-import 'package:daily_todo_app/adapter/todo_collection.dart';
-import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:flutter/material.dart';
 
 // Create a Form widget.
 class TodoCreateForm extends StatefulWidget {
+  final InputPort<CreateTodoParam> inputPort;
+  TodoCreateForm(this.inputPort);
   @override
   TodoCreateFormState createState() {
-    return TodoCreateFormState(
-      InputPortImpl(),
-      CreateTodoUseCase(
-          todoFactory: TodoFactory(
-            TimeGetterDartCoreImpl(),
-            TodoLabelsFactoryImpl(),
-          ),
-          todoCollection: TodoCollectionOnMap(),
-          outputPort: NoneOutputPort(),
-      ),
-    );
+    return TodoCreateFormState(inputPort);
   }
 }
 
 class TodoCreateFormState extends State<TodoCreateForm> {
   final InputPort<CreateTodoParam> _inputPort;
-  final CreateTodoUseCase _usecase;
 
   String _inputText = "";
 
@@ -35,7 +24,7 @@ class TodoCreateFormState extends State<TodoCreateForm> {
   // not a GlobalKey<TodoCreateFormState>.
   final _formKey = GlobalKey<FormState>();
 
-  TodoCreateFormState(this._inputPort, this._usecase);
+  TodoCreateFormState(this._inputPort);
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +44,6 @@ class TodoCreateFormState extends State<TodoCreateForm> {
               onPressed: () {
                 _inputPort
                     .put(CreateTodoParam(subject: _inputText, labels: []));
-                _usecase.execute(_inputPort);
               },
               child: Text('Submit'),
             ),

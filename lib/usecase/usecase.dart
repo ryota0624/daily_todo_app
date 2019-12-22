@@ -2,43 +2,27 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-abstract class InputPort<I> {
+mixin InputPort<I> {
   void put(I input);
-  Stream<I> getInput();
-  Future<I> getSingleInput() => getInput().single;
 }
 
-class InputPortImpl<T> extends InputPort<T> {
-  T _putValue;
-  @override
-  void put(T input) {
-    _putValue = input;
-  }
-  @override
-  Stream<T> getInput() {
-    return Stream.value(_putValue);
-  }
+mixin OutputPort<O> {
+  out(O output);
 }
 
-abstract class OutputPort<O> {
-  execute(O output);
-  OutputPortPerformed perform(O output) {
-    execute(output);
-    return OutputPortPerformed();
-  }
-}
-
-class NoneOutputPort<O> extends OutputPort<O> {
+mixin NoneOutputPort<O> on OutputPort<O> {
   @override
-  execute(O output) {
+  out(O output) {
     return null;
   }
 }
 
-class OutputPortPerformed {}
+abstract class UseCase<I, O> with InputPort<I>, OutputPort<O> {
+  @protected Future<O> execute(I input);
 
-abstract class UseCase<I, O> {
-  @protected final OutputPort<O> outputPort;
-  UseCase(this.outputPort);
-  Future<OutputPortPerformed> execute(InputPort<I> inputPort);
+  @override
+  void put(I input) async {
+    var output = await execute(input);
+    out(output);
+  }
 }

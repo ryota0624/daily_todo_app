@@ -1,5 +1,9 @@
+import 'package:daily_todo_app/todo.dart';
+import 'package:daily_todo_app/usecase/create_todo.dart';
+import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
+import 'adapter/todo_collection.dart';
 
 void main() => runApp(MyApp());
 
@@ -92,13 +96,16 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            TodoCreateForm(),
+            TodoCreateForm(context.createTodoUseCase()),
             Text(
               'You have pushed the button this many times:',
             ),
             Text(
               '$_counter',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .display1,
             ),
           ],
         ),
@@ -108,6 +115,30 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class CreateTodoUseCaseImpl extends CreateTodoUseCase
+    with NoneOutputPort<CreateTodoResult> {
+  CreateTodoUseCaseImpl({
+    @required TodoFactory todoFactory,
+    @required TodoCollection todoCollection
+  })
+      : super(todoFactory, todoCollection);
+}
+
+extension ContextBuilderCreateTodoUseCase on BuildContext {
+  static TodoCollection _todoCollection = TodoCollectionOnMap();
+  TodoCollection todoCollection() => _todoCollection;
+
+  CreateTodoUseCase createTodoUseCase() {
+    return CreateTodoUseCaseImpl(
+      todoFactory: TodoFactory(
+        TimeGetterDartCoreImpl(),
+        TodoLabelsFactoryImpl(),
+      ),
+      todoCollection: todoCollection(),
     );
   }
 }
