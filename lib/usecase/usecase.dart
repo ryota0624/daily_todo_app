@@ -3,9 +3,21 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 abstract class InputPort<I> {
-  put(I input);
+  void put(I input);
   Stream<I> getInput();
   Future<I> getSingleInput() => getInput().single;
+}
+
+class InputPortImpl<T> extends InputPort<T> {
+  T _putValue;
+  @override
+  void put(T input) {
+    _putValue = input;
+  }
+  @override
+  Stream<T> getInput() {
+    return Stream.value(_putValue);
+  }
 }
 
 abstract class OutputPort<O> {
@@ -13,6 +25,13 @@ abstract class OutputPort<O> {
   OutputPortPerformed perform(O output) {
     execute(output);
     return OutputPortPerformed();
+  }
+}
+
+class NoneOutputPort<O> extends OutputPort<O> {
+  @override
+  execute(O output) {
+    return null;
   }
 }
 

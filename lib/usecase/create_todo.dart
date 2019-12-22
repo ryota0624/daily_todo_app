@@ -15,11 +15,11 @@ class CreateTodoResult {
   CreateTodoResult(this.todoID);
 }
 
-class CreateTodo extends UseCase<CreateTodoParam, CreateTodoResult> {
+class CreateTodoUseCase extends UseCase<CreateTodoParam, CreateTodoResult> {
   final TodoFactory _todoFactory;
   final TodoCollection _todoCollection;
 
-  CreateTodo(
+  CreateTodoUseCase(
       {@required TodoFactory todoFactory,
       @required TodoCollection todoCollection,
       @required OutputPort<CreateTodoResult> outputPort})

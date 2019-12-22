@@ -9,14 +9,14 @@ class TodoCreateForm extends StatefulWidget {
   @override
   TodoCreateFormState createState() {
     return TodoCreateFormState(
-      null, // TODO inputportの実装
-      CreateTodo(
+      InputPortImpl(),
+      CreateTodoUseCase(
           todoFactory: TodoFactory(
             TimeGetterDartCoreImpl(),
             TodoLabelsFactoryImpl(),
           ),
           todoCollection: TodoCollectionOnMap(),
-          outputPort: null // TODO outputportの実装
+          outputPort: NoneOutputPort(),
       ),
     );
   }
@@ -24,7 +24,7 @@ class TodoCreateForm extends StatefulWidget {
 
 class TodoCreateFormState extends State<TodoCreateForm> {
   final InputPort<CreateTodoParam> _inputPort;
-  final CreateTodo _usecase;
+  final CreateTodoUseCase _usecase;
 
   String _inputText = "";
 
@@ -42,27 +42,20 @@ class TodoCreateFormState extends State<TodoCreateForm> {
     // Build a Form widget using the _formKey created above.
     return Form(
       key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: <Widget>[
-          TextFormField(
+          Flexible(child:TextFormField(
             onChanged: (text) {
               _inputText = text;
             },
-            validator: (value) {
-              if (value.isEmpty) {
-                return 'Please enter subject';
-              }
-              return null;
-            },
-          ),
+          )),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: RaisedButton(
               onPressed: () {
-                _usecase.execute(_inputPort);
                 _inputPort
                     .put(CreateTodoParam(subject: _inputText, labels: []));
+                _usecase.execute(_inputPort);
               },
               child: Text('Submit'),
             ),
