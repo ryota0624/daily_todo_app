@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
+import 'package:daily_todo_app/widget/component_container.dart' as C;
 import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
 import 'adapter/todo_collection.dart';
@@ -52,7 +53,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Todo> _todos = [];
-  TodoCollection _todoCollection = TodoCollectionOnMap();
+  TodoCollection _todoCollection = c.resolve<TodoCollection>();
   Timer _timer;
 
   _MyHomePageState() {
@@ -84,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              TodoCreateForm(context.createTodoUseCase(_todoCollection)),
+              TodoCreateForm(c.resolve<CreateTodoUseCase>()),
               todoList(context),
             ],
           ),
@@ -92,15 +93,27 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+C.Container container() {
+  return C.Container()
+      .add(TimeGetter, TimeGetterDartCoreImpl())
+      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
+      .add(TodoCollection, TodoCollectionOnMap())
+      .build<TodoFactory>((resolver) =>
+          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
+          todoCollection: resolver<TodoCollection>(),
+          todoFactory: resolver<TodoFactory>(),
+    ));
+}
+
+var c = container();
+
 class CreateTodoUseCaseImpl extends CreateTodoUseCase
-    with StreamOutputPort<CreateTodoResult> {
+    with NoneOutputPort<CreateTodoResult> {
   CreateTodoUseCaseImpl({
     @required TodoFactory todoFactory,
     @required TodoCollection todoCollection,
-    @required StreamSink<CreateTodoResult> outputStream,
-  }) : super(todoFactory, todoCollection) {
-    stream = outputStream;
-  }
+  }) : super(todoFactory, todoCollection);
 }
 
 extension ContextBuilderCreateTodoUseCase on BuildContext {
