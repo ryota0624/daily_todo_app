@@ -110,7 +110,7 @@ extension ContextBuilderCreateTodoUseCase on BuildContext {
           TimeGetterDartCoreImpl(),
           TodoLabelsFactoryImpl(),
         ),
-        todoCollection: todoCollection,
-        outputPortCallback: (CreateTodoResult result) {});
+        todoCollection: todoCollection);
+//        outputPortCallback: (CreateTodoResult result) {});
   }
 }
