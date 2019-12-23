@@ -54,6 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Todo> _todos = [];
   TodoCollection _todoCollection = TodoCollectionOnMap();
   Timer _timer;
+
   _MyHomePageState() {
     _timer = Timer.periodic(Duration(seconds: 1), (Timer t) async {
       var todos = await _todoCollection.getAll();
@@ -67,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget todoList(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children:  _todos.map((todo) {
+      children: _todos.map((todo) {
         return Text(todo.subject().toString());
       }).toList(),
     );
@@ -76,38 +77,40 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TodoCreateForm(context.createTodoUseCase(_todoCollection)),
-            todoList(context),
-          ],
+        appBar: AppBar(
+          title: Text(widget.title),
         ),
-      )
-    );
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              TodoCreateForm(context.createTodoUseCase(_todoCollection)),
+              todoList(context),
+            ],
+          ),
+        ));
   }
 }
 
 class CreateTodoUseCaseImpl extends CreateTodoUseCase
-    with NoneOutputPort<CreateTodoResult> {
-  CreateTodoUseCaseImpl(
-      {@required TodoFactory todoFactory,
-      @required TodoCollection todoCollection})
-      : super(todoFactory, todoCollection);
+    with StreamOutputPort<CreateTodoResult> {
+  CreateTodoUseCaseImpl({
+    @required TodoFactory todoFactory,
+    @required TodoCollection todoCollection,
+    @required StreamSink<CreateTodoResult> outputStream,
+  }) : super(todoFactory, todoCollection) {
+    stream = outputStream;
+  }
 }
 
 extension ContextBuilderCreateTodoUseCase on BuildContext {
   CreateTodoUseCase createTodoUseCase(TodoCollection todoCollection) {
     return CreateTodoUseCaseImpl(
-      todoFactory: TodoFactory(
-        TimeGetterDartCoreImpl(),
-        TodoLabelsFactoryImpl(),
-      ),
-      todoCollection: todoCollection,
-    );
+        todoFactory: TodoFactory(
+          TimeGetterDartCoreImpl(),
+          TodoLabelsFactoryImpl(),
+        ),
+        todoCollection: todoCollection,
+        outputPortCallback: (CreateTodoResult result) {});
   }
 }
