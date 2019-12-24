@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:daily_todo_app/todo.dart';
+import 'package:daily_todo_app/todo/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:daily_todo_app/widget/component_container.dart' as C;
@@ -66,14 +67,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget todoList(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: _todos.map((todo) {
-        return Text(todo.subject().toString());
-      }).toList(),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TodoCreateForm(c.resolve<CreateTodoUseCase>()),
-              todoList(context),
+              TodoListWidget(todos: _todos),
             ],
           ),
         ));
@@ -116,14 +109,30 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
   }) : super(todoFactory, todoCollection);
 }
 
-extension ContextBuilderCreateTodoUseCase on BuildContext {
-  CreateTodoUseCase createTodoUseCase(TodoCollection todoCollection) {
-    return CreateTodoUseCaseImpl(
-        todoFactory: TodoFactory(
-          TimeGetterDartCoreImpl(),
-          TodoLabelsFactoryImpl(),
-        ),
-        todoCollection: todoCollection);
-//        outputPortCallback: (CreateTodoResult result) {});
+class TodoListWidget extends StatelessWidget {
+  final List<Todo> todos;
+
+  const TodoListWidget({Key key, this.todos}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: todos.map((todo) {
+        // TODO for式的なのなかったっけ？
+        return TodoItem(todo: todo);
+      }).toList(),
+    );
+  }
+}
+
+class TodoItem extends StatelessWidget {
+  final Todo todo;
+
+  // TODO Keyとはなんぞや調べる
+  const TodoItem({Key key, this.todo}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return  Text(todo.subject().toString());
   }
 }
