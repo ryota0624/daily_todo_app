@@ -1,4 +1,3 @@
-import 'dart:js_util';
 import 'dart:math';
 
 import 'package:daily_todo_app/todo/label.dart';
@@ -42,6 +41,8 @@ class Todo {
   Status status() => _status;
 
   DateTime createdAt() => _createdAt;
+
+  bool isFinished() => status().isFinished();
 
   Todo _changeStatus(Status status) =>
       Todo(_id, _labels, _subject, _description, status, _createdAt);
