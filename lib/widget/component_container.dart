@@ -23,6 +23,14 @@ class Container {
     return this;
   }
 
+  Container addT<T>(T component) {
+    if (component.runtimeType.toString() == "_Type") {
+      throw ContainerBuildError("component runtimeType=${component.runtimeType}");
+    }
+    _components.putIfAbsent(T, () => component);
+    return this;
+  }
+
   Container register(dynamic component) {
     _components.putIfAbsent(component.runtimeType, () => component);
     return this;
@@ -33,12 +41,28 @@ class Container {
     return add(T, component);
   }
 
+  Container lazy<T>(T builder(R Function<R>() resolver)) {
+    final componentFactory = _ComponentFactory<T>(() => builder(this.resolve));
+    return add(T, componentFactory);
+  }
+
   T resolve<T>() {
-    final resolved = _components[T] as T;
+    final resolved = _components[T];
+
     if (resolved == null) {
       throw ContainerBuildError("component runtimeType=$T was not found");
     }
 
-    return resolved;
+    if (resolved.runtimeType.toString().contains("_ComponentFactory")) {
+      return resolved.create() as T;
+    }
+
+    return resolved as T;
   }
+}
+
+class _ComponentFactory<T> {
+  final T Function() create;
+
+  _ComponentFactory(this.create);
 }

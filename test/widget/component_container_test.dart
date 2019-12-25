@@ -23,6 +23,10 @@ class ComponentB {
 
 class NotFoundComponent {}
 
+class GenericClass<A> {
+  String getMessage() => "message";
+}
+
 void main() {
   final container = Container()
       .add(int, 100)
@@ -44,6 +48,11 @@ void main() {
       final componentB = container.resolve<ComponentB>();
       expect(componentB.getMessage(), equals("componentA: 100"));
     });
+
+    test("resolve generic class", () {
+      final generic = container.addT<GenericClass<ComponentB>>(GenericClass()).resolve<GenericClass<ComponentB>>();
+      expect(generic.getMessage(), equals("message"));
+    });
     
     test("called no register component", () {
       expect(() => container.resolve<NotFoundComponent>(), throwsA(TypeMatcher<ContainerBuildError>()));
@@ -58,6 +67,15 @@ void main() {
 
     test("if add argument 2 was Type", () {
       expect(() => container.add(int, int), throwsA(TypeMatcher<ContainerBuildError>()));
+    });
+  });
+
+  group("container.lazy", () {
+    test("if component had register by factory(), resolve method return every Returns a different value each time it is called", () {
+      final c = Container().lazy<ComponentA>((r) => ComponentAImpl(200));
+      final componentA1 = c.resolve<ComponentA>();
+      final componentA2 = c.resolve<ComponentA>();
+      expect(componentA1.hashCode, isNot(equals(componentA2.hashCode)));
     });
   });
 }
