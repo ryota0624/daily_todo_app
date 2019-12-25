@@ -27,11 +27,30 @@ class GenericClass<A> {
   String getMessage() => "message";
 }
 
+abstract class AbstractGenericClass<A> {
+  String getMessage();
+}
+
+class GenericClassImpl<A> extends AbstractGenericClass<A> {
+  String getMessage() => "message2";
+}
+
+class GenericClassImplA extends GenericClassImpl<int> {
+  String getMessage() => "message3";
+}
+
 void main() {
   final container = Container()
       .add(int, 100)
       .build<ComponentA>((resolver) => ComponentAImpl(resolver<int>()))
       .build<ComponentB>((resolver) => ComponentB(resolver<ComponentA>()));
+
+  group("showAllRegistered", () {
+    test("list", () {
+      final registered = container.showAllRegistered();
+      expect(registered, equals([int, ComponentA, ComponentB]));
+    });
+  });
 
   group("container.resolve", () {
     test("resolve primitive", () {
@@ -52,6 +71,11 @@ void main() {
     test("resolve generic class", () {
       final generic = container.addT<GenericClass<ComponentB>>(GenericClass()).resolve<GenericClass<ComponentB>>();
       expect(generic.getMessage(), equals("message"));
+    });
+
+    test("resolve abstract generic class", () {
+      final generic = container.addT<AbstractGenericClass<int>>(GenericClassImplA()).resolve<AbstractGenericClass<int>>();
+      expect(generic.getMessage(), equals("message3"));
     });
     
     test("called no register component", () {

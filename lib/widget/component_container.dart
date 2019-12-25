@@ -59,6 +59,10 @@ class Container {
 
     return resolved as T;
   }
+
+  List<Type> showAllRegistered() {
+    return _components.keys.toList();
+  }
 }
 
 class _ComponentFactory<T> {
