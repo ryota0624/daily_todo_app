@@ -1,3 +1,4 @@
+import 'package:daily_todo_app/todo/collection.dart';
 import 'package:daily_todo_app/todo/todo.dart';
 
 class Date {
@@ -43,3 +44,5 @@ class DailyTodoList {
     return DailyTodoList(date, []);
   }
 }
+
+abstract class DailyTodoListCollection extends Collection<DailyTodoList> {}
