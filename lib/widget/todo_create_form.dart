@@ -42,6 +42,7 @@ class TodoCreateFormState extends State<TodoCreateForm> {
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: RaisedButton(
               onPressed: () {
+                if (_inputText.isEmpty) return;
                 _inputPort
                     .put(CreateTodoParam(subject: _inputText, labels: []));
               },

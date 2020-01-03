@@ -97,11 +97,11 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              TodoCreateForm(c.resolve<CreateTodoUseCase>()),
               TodoListWidget(
                   todos: _todos,
                   onPressDone: onPressDone,
                   onPressCancel: onPressCancel),
+              TodoCreateForm(c.resolve<CreateTodoUseCase>()),
             ],
           ),
         ));
@@ -263,7 +263,9 @@ class TodoItem extends StatelessWidget {
     return Row(children: [
       statusIcon,
       Text(todo.subject().toString()),
-      Expanded(child: Container(child: statusChangeMenu, alignment: Alignment.centerRight))
+      Expanded(
+          child: Container(
+              child: statusChangeMenu, alignment: Alignment.centerRight))
     ]);
   }
 }
