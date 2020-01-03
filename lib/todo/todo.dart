@@ -66,6 +66,12 @@ class Todo {
 
   bool isFinished() => status().isFinished();
 
+  bool isCompleted() => status().isCompleted();
+
+  bool isCanceled() => status().isCanceled();
+
+  bool isInProgress() => status().isInProgress();
+
   bool hasLabel(Label label) => labels().contains(label);
 
   Todo _changeStatus(Status status) =>
@@ -123,6 +129,8 @@ abstract class Status {
 
   bool isCanceled();
 
+  bool isInProgress();
+
   bool isFinished() {
     return this is Completed || this is Cancelled;
   }
@@ -141,6 +149,9 @@ class NotStarted extends Status {
 
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => false;
 }
 
 class InProgress extends Status {
@@ -161,6 +172,9 @@ class InProgress extends Status {
 
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => true;
 }
 
 class Completed extends Status {
@@ -184,6 +198,9 @@ class Completed extends Status {
 
   @override
   bool isCompleted() => true;
+
+  @override
+  bool isInProgress() => false;
 }
 
 class Cancelled extends Status {
@@ -207,6 +224,9 @@ class Cancelled extends Status {
 
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => false;
 }
 
 abstract class TodoCollection {

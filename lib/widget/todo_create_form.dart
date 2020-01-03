@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 // Create a Form widget.
 class TodoCreateForm extends StatefulWidget {
   final InputPort<CreateTodoParam> inputPort;
+
   TodoCreateForm(this.inputPort);
+
   @override
-  TodoCreateFormState createState() {
-    return TodoCreateFormState(inputPort);
-  }
+  TodoCreateFormState createState() => TodoCreateFormState(inputPort);
 }
 
 class TodoCreateFormState extends State<TodoCreateForm> {
@@ -33,7 +33,7 @@ class TodoCreateFormState extends State<TodoCreateForm> {
       key: _formKey,
       child: Row(
         children: <Widget>[
-          Flexible(child:TextFormField(
+          Flexible(child: TextFormField(
             onChanged: (text) {
               _inputText = text;
             },

@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:daily_todo_app/todo.dart';
-import 'package:daily_todo_app/todo/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:daily_todo_app/widget/component_container.dart' as C;
 import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'adapter/todo_collection.dart';
 
 void main() => runApp(MyApp());
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Todo App'),
     );
   }
 }
@@ -57,16 +57,35 @@ class _MyHomePageState extends State<MyHomePage> {
   TodoCollection _todoCollection = c.resolve<TodoCollection>();
   Timer _timer;
 
-  _MyHomePageState() {
-    _timer = Timer.periodic(Duration(seconds: 1), (Timer t) async {
-      var todos = await _todoCollection.getAll();
-      print(todos);
-      setState(() {
-        _todos = todos;
-      });
+  void reloadTodos() async {
+    var todos = await _todoCollection.getAll();
+    setState(() {
+      _todos = todos;
     });
   }
 
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  void onPressDone(Todo todo) {
+    final collection = c.resolve<TodoCollection>();
+    collection.store(todo.complete());
+    reloadTodos();
+  }
+
+  void onPressCancel(Todo todo) {
+    final collection = c.resolve<TodoCollection>();
+    collection.store(todo.cancel());
+    reloadTodos();
+  }
+
+  _MyHomePageState() {
+    _timer = Timer.periodic(Duration(seconds: 1), (Timer t) async {
+      reloadTodos();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +98,10 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TodoCreateForm(c.resolve<CreateTodoUseCase>()),
-              TodoListWidget(todos: _todos),
+              TodoListWidget(
+                  todos: _todos,
+                  onPressDone: onPressDone,
+                  onPressCancel: onPressCancel),
             ],
           ),
         ));
@@ -94,9 +116,9 @@ C.Container container() {
       .build<TodoFactory>((resolver) =>
           TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
       .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
-          todoCollection: resolver<TodoCollection>(),
-          todoFactory: resolver<TodoFactory>(),
-    ));
+            todoCollection: resolver<TodoCollection>(),
+            todoFactory: resolver<TodoFactory>(),
+          ));
 }
 
 var c = container();
@@ -112,27 +134,143 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
 class TodoListWidget extends StatelessWidget {
   final List<Todo> todos;
 
-  const TodoListWidget({Key key, this.todos}) : super(key: key);
+  final TodoApplyFunction onPressDone;
+
+  final TodoApplyFunction onPressStart;
+
+  final TodoApplyFunction onPressCancel;
+
+  final TodoApplyFunction onPressReturnNotStartedYet;
+
+  const TodoListWidget(
+      {Key key,
+      this.todos,
+      this.onPressDone,
+      this.onPressStart,
+      this.onPressCancel,
+      this.onPressReturnNotStartedYet})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: todos.map((todo) {
-        // TODO for式的なのなかったっけ？
-        return TodoItem(todo: todo);
-      }).toList(),
+      children: <Widget>[
+        for (var todo in todos)
+          TodoItem(
+            todo: todo,
+            key: ObjectKey(todo),
+            onPressDone: this.onPressDone,
+            onPressCancel: onPressCancel,
+          )
+      ],
     );
   }
 }
 
+typedef TodoApplyFunction = void Function(Todo todo);
+
 class TodoItem extends StatelessWidget {
   final Todo todo;
 
-  // TODO Keyとはなんぞや調べる
-  const TodoItem({Key key, this.todo}) : super(key: key);
+  const TodoItem(
+      {Key key,
+      this.todo,
+      this.onPressDone,
+      this.onPressStart,
+      this.onPressCancel,
+      this.onPressReturnNotStartedYet})
+      : super(key: key);
+
+  final TodoApplyFunction onPressDone;
+
+  final TodoApplyFunction onPressStart;
+
+  final TodoApplyFunction onPressCancel;
+
+  final TodoApplyFunction onPressReturnNotStartedYet;
+
+  double get statusIconSize => 24.0;
+
+  Widget get statusIcon {
+    if (todo.isCompleted()) {
+      return Icon(
+        Icons.done,
+        color: Colors.green,
+        size: statusIconSize,
+      );
+    }
+
+    if (todo.isCanceled()) {
+      return Icon(
+        Icons.cancel,
+        color: Colors.red,
+        size: statusIconSize,
+      );
+    }
+
+    if (todo.isInProgress()) {
+      return Icon(
+        Icons.timer,
+        color: Colors.green,
+        size: statusIconSize,
+      );
+    }
+
+    return GestureDetector(
+        onTap: () => onPressDone(todo),
+        child: Icon(
+          Icons.done,
+          color: Colors.grey,
+          size: statusIconSize,
+        ));
+  }
+
+  onSelectedStatusChangeChoice(StatusChangeChoice c) {
+    switch (c) {
+      case StatusChangeChoice.asCancel:
+        onPressCancel(todo);
+        break;
+      case StatusChangeChoice.asNoStartedYet:
+        onPressReturnNotStartedYet(todo);
+        break;
+      case StatusChangeChoice.asComplete:
+        onPressDone(todo);
+        break;
+      case StatusChangeChoice.asInProgress:
+        onPressStart(todo);
+        break;
+    }
+  }
+
+  Widget get statusChangeMenu {
+    return PopupMenuButton(
+      onSelected: onSelectedStatusChangeChoice,
+      itemBuilder: (BuildContext context) {
+        return StatusChangeChoice.values.map((StatusChangeChoice c) {
+          return PopupMenuItem(
+            child: Text(c.toString()),
+            value: c,
+          );
+        }).toList();
+      },
+    );
+  }
+
+  // TODO LongTapでメニュー出現 -> Cancel, NotStartedYetからの即Completed を実行
   @override
   Widget build(BuildContext context) {
-    return  Text(todo.subject().toString());
+    return Row(children: [
+      statusIcon,
+      Text(todo.subject().toString()),
+      Expanded(child: Container(child: statusChangeMenu, alignment: Alignment.centerRight))
+    ]);
   }
+}
+
+enum StatusChangeChoice {
+  asCancel,
+  asNoStartedYet,
+  asComplete,
+  asInProgress,
 }
