@@ -41,6 +41,18 @@ class EmptyDescription extends Description {
   bool isEmpty() => true;
 }
 
+class Todos {
+  final List<Todo> _values;
+  Todos(this._values);
+
+  static empty() => Todos([]);
+
+  List<Todo> selectCompleted() => _values.where((todo) => todo.isCompleted()).toList();
+  List<Todo> selectCanceled() =>  _values.where((todo) => todo.isCanceled()).toList();
+  List<Todo> selectNotFinished() => _values.where((todo) => !todo.isFinished()).toList();
+
+}
+
 class Todo {
   final ID<Todo> _id;
   final TodoLabels _labels;

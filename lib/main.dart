@@ -53,14 +53,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Todo> _todos = [];
+  Todos _todos = Todos.empty();
   TodoCollection _todoCollection = c.resolve<TodoCollection>();
   Timer _timer;
 
   void reloadTodos() async {
     var todos = await _todoCollection.getAll();
     setState(() {
-      _todos = todos;
+      _todos = Todos(todos);
     });
   }
 
@@ -101,7 +101,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   todos: _todos,
                   onPressDone: onPressDone,
                   onPressCancel: onPressCancel),
-              TodoCreateForm(c.resolve<CreateTodoUseCase>()),
+              TodoCreateForm(c.resolve<CreateTodoUseCase>()), // TODO 画面下部
             ],
           ),
         ));
@@ -132,7 +132,7 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
 }
 
 class TodoListWidget extends StatelessWidget {
-  final List<Todo> todos;
+  final Todos todos;
 
   final TodoApplyFunction onPressDone;
 
@@ -156,7 +156,24 @@ class TodoListWidget extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        for (var todo in todos)
+        for (var todo in todos.selectNotFinished())
+          TodoItem(
+            todo: todo,
+            key: ObjectKey(todo),
+            onPressDone: this.onPressDone,
+            onPressCancel: onPressCancel,
+          ),
+        // TODO divide & label
+
+        for (var todo in todos.selectCompleted())
+          TodoItem(
+            todo: todo,
+            key: ObjectKey(todo),
+            onPressDone: this.onPressDone,
+            onPressCancel: onPressCancel,
+          ),
+        // TODO divide& label
+        for (var todo in todos.selectCanceled())
           TodoItem(
             todo: todo,
             key: ObjectKey(todo),
