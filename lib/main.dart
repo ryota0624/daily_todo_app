@@ -93,17 +93,27 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text(widget.title),
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TodoListWidget(
-                  todos: _todos,
-                  onPressDone: onPressDone,
-                  onPressCancel: onPressCancel),
-              TodoCreateForm(c.resolve<CreateTodoUseCase>()), // TODO 画面下部
-            ],
-          ),
+        body: ConstrainedBox(
+          constraints: BoxConstraints.expand(),
+          child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Container(
+                    child: TodoListWidget(
+                        todos: _todos,
+                        onPressDone: onPressDone,
+                        onPressCancel: onPressCancel),
+                    alignment: Alignment.topCenter,
+                  ),
+                  Container(
+                    child: TodoCreateForm(c.resolve<CreateTodoUseCase>()),
+                    // TODO 画面下部
+                    alignment: Alignment.bottomCenter,
+                  ),
+                ],
+              )),
         ));
   }
 }
