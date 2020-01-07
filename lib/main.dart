@@ -161,35 +161,31 @@ class TodoListWidget extends StatelessWidget {
       this.onPressReturnNotStartedYet})
       : super(key: key);
 
+  Widget _listView(String label, List<Todo> todos) {
+    if (todos.isEmpty) return Container();
+
+    return Column(children: [
+      Text(label),
+      ListView(shrinkWrap: true, children: [
+        for (var todo in todos)
+          TodoItem(
+            todo: todo,
+            key: ObjectKey(todo),
+            onPressDone: onPressDone,
+            onPressCancel: onPressCancel,
+          ),
+      ])
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return ListView(shrinkWrap: true,
+//      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        for (var todo in todos.selectNotFinished())
-          TodoItem(
-            todo: todo,
-            key: ObjectKey(todo),
-            onPressDone: this.onPressDone,
-            onPressCancel: onPressCancel,
-          ),
-        // TODO divide & label
-
-        for (var todo in todos.selectCompleted())
-          TodoItem(
-            todo: todo,
-            key: ObjectKey(todo),
-            onPressDone: this.onPressDone,
-            onPressCancel: onPressCancel,
-          ),
-        // TODO divide& label
-        for (var todo in todos.selectCanceled())
-          TodoItem(
-            todo: todo,
-            key: ObjectKey(todo),
-            onPressDone: this.onPressDone,
-            onPressCancel: onPressCancel,
-          )
+        _listView("未完了", todos.selectNotFinished()),
+        _listView("完了", todos.selectCompleted()),
+        _listView("キャンセル済", todos.selectCanceled()),
       ],
     );
   }
