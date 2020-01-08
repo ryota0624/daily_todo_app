@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
@@ -109,7 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   Container(
                     child: TodoCreateForm(c.resolve<CreateTodoUseCase>()),
-                    // TODO 画面下部
                     alignment: Alignment.bottomCenter,
                   ),
                 ],
@@ -134,11 +134,12 @@ C.Container container() {
 var c = container();
 
 class CreateTodoUseCaseImpl extends CreateTodoUseCase
-    with NoneOutputPort<CreateTodoResult> {
+    with MixinEventPublisher, NoneOutputPort<CreateTodoResult> {
   CreateTodoUseCaseImpl({
     @required TodoFactory todoFactory,
     @required TodoCollection todoCollection,
   }) : super(todoFactory, todoCollection);
+
 }
 
 class TodoListWidget extends StatelessWidget {
@@ -168,7 +169,7 @@ class TodoListWidget extends StatelessWidget {
       Text(label),
       ListView(shrinkWrap: true, children: [
         for (var todo in todos)
-          TodoItem(
+          TodoListItem(
             todo: todo,
             key: ObjectKey(todo),
             onPressDone: onPressDone,
@@ -180,7 +181,8 @@ class TodoListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(shrinkWrap: true,
+    return ListView(
+      shrinkWrap: true,
 //      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         _listView("未完了", todos.selectNotFinished()),
@@ -193,10 +195,10 @@ class TodoListWidget extends StatelessWidget {
 
 typedef TodoApplyFunction = void Function(Todo todo);
 
-class TodoItem extends StatelessWidget {
+class TodoListItem extends StatelessWidget {
   final Todo todo;
 
-  const TodoItem(
+  const TodoListItem(
       {Key key,
       this.todo,
       this.onPressDone,
@@ -284,7 +286,7 @@ class TodoItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      statusIcon,
+      Padding(child: statusIcon, padding: EdgeInsets.only(right: 10)),
       Text(todo.subject().toString()),
       Expanded(
           child: Container(

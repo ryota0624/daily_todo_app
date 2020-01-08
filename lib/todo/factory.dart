@@ -1,3 +1,5 @@
+import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/todo/event.dart';
 import 'package:daily_todo_app/todo/todo.dart';
 import 'package:daily_todo_app/todo/label.dart';
 import 'package:meta/meta.dart';
@@ -8,15 +10,22 @@ class TodoFactory {
 
   TodoFactory(this._timeGetter, this._labelsFactory);
 
-  Todo create({
+  WithEvent<TodoCreated, Todo> create({
     @required Subject subject,
     @required List<Label> labels,
   }) {
     final id = ID.create<Todo>();
     final status = NotStarted();
     final createdAt = _timeGetter.now();
-    return Todo(id, _labelsFactory.create(labels), subject, EmptyDescription(),
-        status, createdAt);
+    final todo = Todo(id, _labelsFactory.create(labels), subject,
+        EmptyDescription(), status, createdAt);
+
+    return WithEvent(
+        TodoCreated(
+          todo.id(),
+          todo.subject(),
+        ),
+        todo);
   }
 }
 
