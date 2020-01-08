@@ -53,7 +53,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   Todos _todos = Todos.empty();
   TodoCollection _todoCollection = c.resolve<TodoCollection>();
   Timer _timer;
@@ -83,7 +83,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _MyHomePageState() {
-    _timer = Timer.periodic(Duration(seconds: 1), (Timer t) async {
+    // containerから取りたい
+    // unsubscribeの呼び出し
+    eventSubscriber.subscribe((evt) {
       reloadTodos();
     });
   }
@@ -118,6 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+// TODO Container.of(ctx)から取れるようにしたい
 C.Container container() {
   return C.Container()
       .add(TimeGetter, TimeGetterDartCoreImpl())
@@ -139,7 +142,6 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
     @required TodoFactory todoFactory,
     @required TodoCollection todoCollection,
   }) : super(todoFactory, todoCollection);
-
 }
 
 class TodoListWidget extends StatelessWidget {

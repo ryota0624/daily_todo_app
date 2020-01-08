@@ -9,10 +9,10 @@ void main() {
         TodoFactory(MockTimeGetter(dateTime), TodoLabelsFactoryImpl());
     final labels = [Label("Home"), Label("ASAP")];
     final subject = Subject("cleaning toilet");
-    final todo = factory.create(subject: subject, labels: labels);
-
+    final created = factory.create(subject: subject, labels: labels);
+    final todo = created.result;
     test("todo has subject that as same as arguments", () {
-      expect(todo.subject(), equals(subject));
+      expect(todo..subject(), equals(subject));
     });
 
     test("todo has labels that has equal element with arguments", () {

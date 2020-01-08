@@ -5,17 +5,17 @@ import 'mock_time_getter.dart';
 void main() {
   final dateTime = DateTime(2019);
   final factory =  TodoFactory(MockTimeGetter(dateTime), TodoLabelsFactoryImpl());
-  Todo todo = factory.create(subject: Subject("test"), labels: []);
+  final todo = factory.create(subject: Subject("test"), labels: []);
 
   group("complete()", () {
-    final completed = todo.complete();
+    final completed = todo.result.complete();
     test('isFinished return true', () async {
       expect(completed.isFinished(), equals(true));
     });
   });
 
   group("cancel()", () {
-    final canceled = todo.cancel();
+    final canceled = todo.result.cancel();
     test('isFinished return true', () async {
       expect(canceled.isFinished(), equals(true));
     });
@@ -23,7 +23,7 @@ void main() {
 
   group("changeSubject()", () {
     final newSubject = Subject("next");
-    final subjectChanged = todo.changeSubject(newSubject);
+    final subjectChanged = todo.result.changeSubject(newSubject);
     test("subject() is return Subject that taken by arguments", () {
       expect(subjectChanged.subject(), equals(newSubject));
     });
@@ -31,7 +31,7 @@ void main() {
 
   group("changeDescription()", () {
     final newDescription = TextDescription("next");
-    final descriptionChanged = todo.changeDescription(newDescription);
+    final descriptionChanged = todo.result.changeDescription(newDescription);
     test("desciption() is return Description that taken by arguments", () {
       expect(descriptionChanged.description(), equals(newDescription));
     });
@@ -39,7 +39,7 @@ void main() {
 
   group("addLabel()", () {
     final newLabel = Label("next");
-    final addedLabel = todo.addLabel(newLabel);
+    final addedLabel = todo.result.addLabel(newLabel);
     test("labels() is return Labels that is contains added label", () {
       expect(addedLabel.hasLabel(newLabel), equals(true));
     });

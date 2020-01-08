@@ -25,11 +25,10 @@ mixin OutputPort<O> {
 }
 
 mixin EventOutputPort<O extends UseCaseResult> on OutputPort<O>, WithEventPublisher {
-  out(UseCaseResult output) {
+  out(O output) {
     for (final evt in output.events) {
       eventPublisher.publish(evt);
     }
-    out(output);
   }
 }
 
@@ -39,6 +38,7 @@ mixin StreamOutputPresenter<O extends UseCaseResult> on EventOutputPort<O> {
   @override
   out(O output) {
     stream.add(output);
+    super.out(output);
     return null;
   }
 }
@@ -48,12 +48,14 @@ mixin CallbackOutputPresenter<O  extends UseCaseResult> on EventOutputPort<O> {
   @override
   out(UseCaseResult output) {
     callback(output);
+    super.out(output);
     return null;
   }
 }
 mixin NoneOutputPort<O extends UseCaseResult> on EventOutputPort<O> {
   @override
   out(UseCaseResult output) {
+    super.out(output);
     return null;
   }
 }
