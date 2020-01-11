@@ -1,3 +1,4 @@
+import 'package:daily_todo_app/errors/enum_error.dart';
 import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/todo/event.dart';
@@ -61,7 +62,7 @@ abstract class ChangeTodoStatusUseCase
         changed = todo.start(_timeGetter.now());
         break;
       default:
-        throw TypeError();
+        throw InvalidEnumArgumentException(input.status);
     }
 
     await _todoCollection.store(changed.result);
