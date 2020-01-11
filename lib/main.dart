@@ -10,6 +10,7 @@ import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'adapter/todo_collection.dart';
+import 'errors/enum_error.dart';
 
 void main() => runApp(MyApp());
 
@@ -20,15 +21,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
       home: MyHomePage(title: 'Todo App'),
@@ -38,16 +30,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -85,7 +67,22 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
     changeTodoStatusUseCase.put(ChangeTodoStatusParam(
       todoID: todo.id(),
       status: ChangeTodoStatus.Cancel,
-    ));  }
+    ));
+  }
+
+  void onPressStart(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.Start,
+    ));
+  }
+
+  void onPressReturnNotStartedYet(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.Start,
+    ));
+  }
 
   _MyHomePageState() {
     // containerから取りたい
@@ -110,9 +107,12 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
                 children: <Widget>[
                   Container(
                     child: TodoListWidget(
-                        todos: _todos,
-                        onPressDone: onPressDone,
-                        onPressCancel: onPressCancel),
+                      todos: _todos,
+                      onPressDone: onPressDone,
+                      onPressCancel: onPressCancel,
+                      onPressStart: onPressStart,
+                      onPressReturnNotStartedYet: onPressReturnNotStartedYet,
+                    ),
                     alignment: Alignment.topCenter,
                   ),
                   Container(
@@ -178,14 +178,14 @@ class TodoListWidget extends StatelessWidget {
 
   final TodoApplyFunction onPressReturnNotStartedYet;
 
-  const TodoListWidget(
-      {Key key,
-      this.todos,
-      this.onPressDone,
-      this.onPressStart,
-      this.onPressCancel,
-      this.onPressReturnNotStartedYet})
-      : super(key: key);
+  const TodoListWidget({
+    Key key,
+    @required this.todos,
+    @required this.onPressDone,
+    @required this.onPressStart,
+    @required this.onPressCancel,
+    @required this.onPressReturnNotStartedYet,
+  }) : super(key: key);
 
   Widget _listView(String label, List<Todo> todos) {
     if (todos.isEmpty) return Container();
@@ -199,6 +199,8 @@ class TodoListWidget extends StatelessWidget {
             key: ObjectKey(todo),
             onPressDone: onPressDone,
             onPressCancel: onPressCancel,
+            onPressReturnNotStartedYet: onPressReturnNotStartedYet,
+            onPressStart: onPressStart,
           ),
       ])
     ]);
@@ -208,7 +210,6 @@ class TodoListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       shrinkWrap: true,
-//      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         _listView("未完了", todos.selectNotFinished()),
         _listView("完了", todos.selectCompleted()),
@@ -225,11 +226,11 @@ class TodoListItem extends StatelessWidget {
 
   const TodoListItem(
       {Key key,
-      this.todo,
-      this.onPressDone,
-      this.onPressStart,
-      this.onPressCancel,
-      this.onPressReturnNotStartedYet})
+      @required this.todo,
+      @required this.onPressDone,
+      @required this.onPressStart,
+      @required this.onPressCancel,
+      @required this.onPressReturnNotStartedYet})
       : super(key: key);
 
   final TodoApplyFunction onPressDone;
@@ -314,7 +315,9 @@ class TodoListItem extends StatelessWidget {
       Text(todo.subject().toString()),
       Expanded(
           child: Container(
-              child: statusChangeMenu, alignment: Alignment.centerRight))
+        child: statusChangeMenu,
+        alignment: Alignment.centerRight,
+      ))
     ]);
   }
 }
@@ -338,7 +341,7 @@ extension on StatusChangeChoice {
       case StatusChangeChoice.asInProgress:
         return "実施中";
       default:
-        throw TypeError();
+        throw InvalidEnumArgumentException(this);
     }
   }
 }
