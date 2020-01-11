@@ -1,6 +1,13 @@
+import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:flutter/material.dart';
+
+class TodoCreationConfirmed extends UiEvent {
+  final String subject;
+
+  TodoCreationConfirmed(this.subject);
+}
 
 // Create a Form widget.
 class TodoCreateForm extends StatefulWidget {
@@ -43,6 +50,8 @@ class TodoCreateFormState extends State<TodoCreateForm> {
             child: RaisedButton(
               onPressed: () {
                 if (_inputText.isEmpty) return;
+                TodoCreationConfirmed(_inputText);
+
                 _inputPort
                     .put(CreateTodoParam(subject: _inputText, labels: []));
               },

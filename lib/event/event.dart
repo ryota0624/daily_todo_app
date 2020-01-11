@@ -6,6 +6,8 @@ abstract class Event {
   final DateTime occurredAt = DateTime.now();
 }
 
+abstract class UiEvent extends Event {}
+
 abstract class DomainEvent extends Event {}
 
 class WithEvent<E extends DomainEvent, Other> {

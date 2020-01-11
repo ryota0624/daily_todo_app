@@ -144,6 +144,10 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
   }) : super(todoFactory, todoCollection);
 }
 
+class TodoCompleted extends UiEvent {}
+class TodoCanceled extends UiEvent {}
+class TodoReturnNotStartedYet extends UiEvent {}
+
 class TodoListWidget extends StatelessWidget {
   final Todos todos;
 
@@ -217,7 +221,7 @@ class TodoListItem extends StatelessWidget {
 
   final TodoApplyFunction onPressReturnNotStartedYet;
 
-  double get statusIconSize => 24.0;
+  static const double statusIconSize = 24.0;
 
   Widget get statusIcon {
     if (todo.isCompleted()) {
@@ -276,7 +280,7 @@ class TodoListItem extends StatelessWidget {
       itemBuilder: (BuildContext context) {
         return StatusChangeChoice.values.map((StatusChangeChoice c) {
           return PopupMenuItem(
-            child: Text(c.toString()),
+            child: Text(c.asString()),
             value: c,
           );
         }).toList();
@@ -284,7 +288,6 @@ class TodoListItem extends StatelessWidget {
     );
   }
 
-  // TODO LongTapでメニュー出現 -> Cancel, NotStartedYetからの即Completed を実行
   @override
   Widget build(BuildContext context) {
     return Row(children: [
@@ -302,4 +305,21 @@ enum StatusChangeChoice {
   asNoStartedYet,
   asComplete,
   asInProgress,
+}
+
+extension on StatusChangeChoice {
+  String asString() {
+    switch (this) {
+      case StatusChangeChoice.asCancel:
+        return "キャンセル";
+      case StatusChangeChoice.asNoStartedYet:
+        return "未着手";
+      case StatusChangeChoice.asComplete:
+        return "完了";
+      case StatusChangeChoice.asInProgress:
+        return "実施中";
+      default:
+        throw TypeError();
+    }
+  }
 }

@@ -8,14 +8,14 @@ void main() {
   final todo = factory.create(subject: Subject("test"), labels: []);
 
   group("complete()", () {
-    final completed = todo.result.complete();
+    final completed = todo.result.complete(dateTime).result;
     test('isFinished return true', () async {
       expect(completed.isFinished(), equals(true));
     });
   });
 
   group("cancel()", () {
-    final canceled = todo.result.cancel();
+    final canceled = todo.result.cancel(dateTime).result;
     test('isFinished return true', () async {
       expect(canceled.isFinished(), equals(true));
     });

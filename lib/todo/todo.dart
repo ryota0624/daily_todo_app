@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/todo/event.dart';
 import 'package:daily_todo_app/todo/label.dart';
 
 class ID<E> {
@@ -43,14 +45,19 @@ class EmptyDescription extends Description {
 
 class Todos {
   final List<Todo> _values;
+
   Todos(this._values);
 
   static empty() => Todos([]);
 
-  List<Todo> selectCompleted() => _values.where((todo) => todo.isCompleted()).toList();
-  List<Todo> selectCanceled() =>  _values.where((todo) => todo.isCanceled()).toList();
-  List<Todo> selectNotFinished() => _values.where((todo) => !todo.isFinished()).toList();
+  List<Todo> selectCompleted() =>
+      _values.where((todo) => todo.isCompleted()).toList();
 
+  List<Todo> selectCanceled() =>
+      _values.where((todo) => todo.isCanceled()).toList();
+
+  List<Todo> selectNotFinished() =>
+      _values.where((todo) => !todo.isFinished()).toList();
 }
 
 class Todo {
@@ -86,12 +93,21 @@ class Todo {
 
   bool hasLabel(Label label) => labels().contains(label);
 
-  Todo _changeStatus(Status status) =>
-      Todo(_id, _labels, _subject, _description, status, _createdAt);
+  WithEvent<TodoStatusChanged, Todo> _changeStatus(Status status) {
+    final todo = Todo(_id, _labels, _subject, _description, status, _createdAt);
+    return WithEvent(TodoStatusChanged(todo.id(), todo.status()), todo);
+  }
 
-  Todo complete() => _changeStatus(status().complete());
+  WithEvent<TodoStatusChanged, Todo> complete(DateTime completedAt) =>
+      _changeStatus(status().complete(completedAt));
 
-  Todo cancel() => _changeStatus(status().cancel());
+  WithEvent<TodoStatusChanged, Todo> cancel(DateTime canceledAt) =>
+      _changeStatus(status().cancel(canceledAt));
+
+  WithEvent<TodoStatusChanged, Todo> start(DateTime startedAt) => _changeStatus(status().start(startedAt));
+
+  WithEvent<TodoStatusChanged, Todo> asNotStartedYet() =>
+      _changeStatus(status().asNotStartedYet());
 
   Todo changeSubject(Subject s) =>
       Todo(_id, _labels, s, _description, _status, _createdAt);
@@ -131,11 +147,13 @@ class TodoLabelsListImpl extends TodoLabels {
 }
 
 abstract class Status {
-  Status start();
+  Status start(DateTime startedAt);
 
-  Status complete();
+  Status complete(DateTime completedAt);
 
-  Status cancel();
+  Status cancel(DateTime canceledAt);
+
+  Status asNotStartedYet() => NotStarted();
 
   bool isCompleted();
 
@@ -149,12 +167,12 @@ abstract class Status {
 }
 
 class NotStarted extends Status {
-  InProgress start() => InProgress(DateTime.now());
+  InProgress start(DateTime startedAt) => InProgress(startedAt);
 
-  cancel() => Cancelled(startedAt: DateTime.now(), cancelledAt: DateTime.now());
+  cancel(DateTime canceledAt) => Cancelled(startedAt: canceledAt, cancelledAt: canceledAt);
 
-  Completed complete() =>
-      Completed(startedAt: DateTime.now(), completedAt: DateTime.now());
+  Completed complete(DateTime completedAt) =>
+      Completed(startedAt: completedAt, completedAt: completedAt);
 
   @override
   bool isCanceled() => false;
@@ -171,13 +189,13 @@ class InProgress extends Status {
 
   InProgress(this.startedAt);
 
-  Completed complete() =>
-      Completed(startedAt: startedAt, completedAt: DateTime.now());
+  Completed complete(DateTime date) =>
+      Completed(startedAt: startedAt, completedAt: date);
 
-  Cancelled cancel() =>
-      Cancelled(startedAt: startedAt, cancelledAt: DateTime.now());
+  Cancelled cancel(DateTime date) =>
+      Cancelled(startedAt: startedAt, cancelledAt: date);
 
-  Status start() => this;
+  Status start(_) => this;
 
   @override
   bool isCanceled() => false;
@@ -196,14 +214,14 @@ class Completed extends Status {
   Completed({this.startedAt, this.completedAt});
 
   @override
-  Status cancel() =>
-      Cancelled(startedAt: startedAt, cancelledAt: DateTime.now());
+  Status cancel(DateTime date) =>
+      Cancelled(startedAt: startedAt, cancelledAt: date);
 
   @override
-  Status complete() => this;
+  Status complete(_) => this;
 
   @override
-  Status start() => this;
+  Status start(_) => this;
 
   @override
   bool isCanceled() => false;
@@ -222,14 +240,14 @@ class Cancelled extends Status {
   Cancelled({this.startedAt, this.cancelledAt});
 
   @override
-  Status cancel() => this;
+  Status cancel(_) => this;
 
   @override
-  Status complete() =>
-      Completed(startedAt: startedAt, completedAt: DateTime.now());
+  Status complete(DateTime date) =>
+      Completed(startedAt: startedAt, completedAt: date);
 
   @override
-  Status start() => this;
+  Status start(_) => this;
 
   @override
   bool isCanceled() => true;
@@ -245,5 +263,6 @@ abstract class TodoCollection {
   Future<void> store(Todo todo);
 
   Future<Todo> get(ID<Todo> id);
+
   Future<List<Todo>> getAll();
 }
