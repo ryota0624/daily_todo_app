@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/todo.dart';
+import 'package:daily_todo_app/usecase/change_todo_status.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:daily_todo_app/widget/component_container.dart' as C;
@@ -70,17 +71,21 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
     super.dispose();
   }
 
+  ChangeTodoStatusUseCase get changeTodoStatusUseCase =>
+      c.resolve<ChangeTodoStatusUseCase>();
+
   void onPressDone(Todo todo) {
-    final collection = c.resolve<TodoCollection>();
-    collection.store(todo.complete());
-    reloadTodos();
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.Complete,
+    ));
   }
 
   void onPressCancel(Todo todo) {
-    final collection = c.resolve<TodoCollection>();
-    collection.store(todo.cancel());
-    reloadTodos();
-  }
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.Cancel,
+    ));  }
 
   _MyHomePageState() {
     // containerから取りたい
@@ -131,6 +136,10 @@ C.Container container() {
       .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
             todoCollection: resolver<TodoCollection>(),
             todoFactory: resolver<TodoFactory>(),
+          ))
+      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            timeGetter: resolver<TimeGetter>(),
           ));
 }
 
@@ -144,8 +153,18 @@ class CreateTodoUseCaseImpl extends CreateTodoUseCase
   }) : super(todoFactory, todoCollection);
 }
 
+class ChangeTodoStatusUseCaseImpl extends ChangeTodoStatusUseCase
+    with MixinEventPublisher, NoneOutputPort<ChangeTodoStatusResult> {
+  ChangeTodoStatusUseCaseImpl({
+    @required TodoCollection todoCollection,
+    @required TimeGetter timeGetter,
+  }) : super(todoCollection, timeGetter);
+}
+
 class TodoCompleted extends UiEvent {}
+
 class TodoCanceled extends UiEvent {}
+
 class TodoReturnNotStartedYet extends UiEvent {}
 
 class TodoListWidget extends StatelessWidget {
