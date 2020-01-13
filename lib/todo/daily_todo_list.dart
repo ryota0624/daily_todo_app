@@ -1,4 +1,5 @@
 import 'package:daily_todo_app/todo/todo.dart';
+import 'package:flutter/cupertino.dart';
 
 class Date {
   final int year;
@@ -12,34 +13,40 @@ class Date {
   }
 
   DateTime asDateTime() => DateTime(year, month, day);
+
+  factory Date.today() {
+    final now = DateTime.now();
+    return Date.fromDateTime(now);
+  }
 }
 
 class DailyTodoList {
-  final Date _date;
-  final List<Todo> _list;
+  final ID<DailyTodoList> id;
 
-  DailyTodoList(this._date, this._list);
+  final Date date;
 
-  // 未達成を引きついで次の日のリストを作る
-  DailyTodoList createNextDayTodoList() {
-    var remainedTodos = _list.where((e) => !e.isFinished());
-    return DailyTodoList(_date, remainedTodos);
-  }
 
-  DailyTodoList addTodo(Todo todo) {
-    final copied = _list.toList();
-    copied.add(todo);
-    return DailyTodoList(_date, copied);
-  }
+  DailyTodoList({
+    @required this.id,
+    @required this.date,
+  });
 
-  DailyTodoList modifyTodo(Todo todo) {
-    final modified = _list.map((t) => t.id() == todo.id() ? todo : t).toList();
-    return DailyTodoList(_date, modified);
-  }
+//  // DomainService 未達成を引きついで次の日のリストを作る
+//  DailyTodoList createNextDayTodoList(Todos todos) {
+//    return DailyTodoList(_date, Todos(todos.selectNotFinished()));
+//  }
+//
+//  DailyTodoList addTodo(Todo todo) => DailyTodoList(_date, _todos.put(todo));
+//  DailyTodoList modifyTodo(Todo todo) => DailyTodoList(_date, _todos.put(todo));
+//
+//  bool isAllTodoFinished() => _todos.isAllFinished();
+}
 
-  bool isAllTodoFinished() => _list.every((el) => el.isFinished());
+abstract class DailyTodoListCollection {
+  Future<void> store(DailyTodoList todo);
 
-  factory DailyTodoList.initialize(Date date) {
-    return DailyTodoList(date, []);
-  }
+  Future<DailyTodoList> get(ID<DailyTodoList> id);
+  Future<DailyTodoList> getByDate(Date date);
+
+  Future<List<DailyTodoList>> getAll();
 }

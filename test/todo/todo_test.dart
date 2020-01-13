@@ -5,7 +5,8 @@ import 'mock_time_getter.dart';
 void main() {
   final dateTime = DateTime(2019);
   final factory =  TodoFactory(MockTimeGetter(dateTime), TodoLabelsFactoryImpl());
-  final todo = factory.create(subject: Subject("test"), labels: []);
+  final listID = ID.create<DailyTodoList>();
+  final todo = factory.create(subject: Subject("test"), labels: [], listID: listID);
 
   group("complete()", () {
     final completed = todo.result.complete(dateTime).result;

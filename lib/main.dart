@@ -38,20 +38,87 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   Todos _todos = Todos.empty();
+  DailyTodoList _selected;
+  ID<DailyTodoList> selectedListID;
   TodoCollection _todoCollection = c.resolve<TodoCollection>();
-  Timer _timer;
+  DailyTodoListCollection _dailyTodoListCollection = c.resolve<DailyTodoListCollection>();
+
 
   void reloadTodos() async {
-    var todos = await _todoCollection.getAll();
+    var todos = await _todoCollection.getByListID(_selected.id);
     setState(() {
       _todos = Todos(todos);
     });
   }
 
+  void reloadDailyTodoList() async {
+
+    if (_selected == null) {
+      _selected = await _dailyTodoListCollection.getByDate(Date.today());
+    } else {
+      _selected = await _dailyTodoListCollection.get(_selected.id);
+    }
+
+    reloadTodos();
+  }
+
   void dispose() {
-    _timer.cancel();
+    eventSubscriber.remove(subscribeID);
     super.dispose();
   }
+
+  SubscribeID subscribeID;
+
+  _MyHomePageState() {
+    // containerから取りたい
+    subscribeID = eventSubscriber.subscribe((evt) {
+      // TODO eventの種類によって List or Todoのreloadを分ける
+      reloadTodos();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: ConstrainedBox(
+          constraints: BoxConstraints.expand(),
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: DailyTodoListPage(
+              list: null,
+              todos: _todos,
+            ),
+          )),
+    );
+  }
+}
+
+// TODO Container.of(ctx)から取れるようにしたい
+C.Container container() {
+  return C.Container()
+      .add(TimeGetter, TimeGetterDartCoreImpl())
+      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
+      .add(TodoCollection, TodoCollectionOnMap())
+      .build<TodoFactory>((resolver) =>
+          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            todoFactory: resolver<TodoFactory>(),
+          ))
+      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            timeGetter: resolver<TimeGetter>(),
+          ));
+}
+
+var c = container();
+
+class DailyTodoListPage extends StatelessWidget {
+  final DailyTodoList list;
+  final Todos todos;
 
   ChangeTodoStatusUseCase get changeTodoStatusUseCase =>
       c.resolve<ChangeTodoStatusUseCase>();
@@ -84,66 +151,38 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
     ));
   }
 
-  _MyHomePageState() {
-    // containerから取りたい
-    // unsubscribeの呼び出し
-    eventSubscriber.subscribe((evt) {
-      reloadTodos();
-    });
-  }
+  const DailyTodoListPage({
+    Key key,
+    @required this.list,
+    @required this.todos,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Container(
+          child: TodoListWidget(
+            todos: todos,
+            onPressDone: onPressDone,
+            onPressCancel: onPressCancel,
+            onPressStart: onPressStart,
+            onPressReturnNotStartedYet: onPressReturnNotStartedYet,
+          ),
+          alignment: Alignment.topCenter,
         ),
-        body: ConstrainedBox(
-          constraints: BoxConstraints.expand(),
-          child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Container(
-                    child: TodoListWidget(
-                      todos: _todos,
-                      onPressDone: onPressDone,
-                      onPressCancel: onPressCancel,
-                      onPressStart: onPressStart,
-                      onPressReturnNotStartedYet: onPressReturnNotStartedYet,
-                    ),
-                    alignment: Alignment.topCenter,
-                  ),
-                  Container(
-                    child: TodoCreateForm(c.resolve<CreateTodoUseCase>()),
-                    alignment: Alignment.bottomCenter,
-                  ),
-                ],
-              )),
-        ));
+        Container(
+          child: TodoCreateForm(
+            listID: null,
+            inputPort: c.resolve<CreateTodoUseCase>(),
+          ),
+          alignment: Alignment.bottomCenter,
+        ),
+      ],
+    );
   }
 }
-
-// TODO Container.of(ctx)から取れるようにしたい
-C.Container container() {
-  return C.Container()
-      .add(TimeGetter, TimeGetterDartCoreImpl())
-      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
-      .add(TodoCollection, TodoCollectionOnMap())
-      .build<TodoFactory>((resolver) =>
-          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
-      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
-            todoCollection: resolver<TodoCollection>(),
-            todoFactory: resolver<TodoFactory>(),
-          ))
-      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
-            todoCollection: resolver<TodoCollection>(),
-            timeGetter: resolver<TimeGetter>(),
-          ));
-}
-
-var c = container();
 
 class CreateTodoUseCaseImpl extends CreateTodoUseCase
     with MixinEventPublisher, NoneOutputPort<CreateTodoResult> {

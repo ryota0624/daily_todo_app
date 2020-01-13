@@ -4,12 +4,13 @@ import 'mock_time_getter.dart';
 
 void main() {
   group("create", () {
+    final listID = ID.create<DailyTodoList>();
     final dateTime = DateTime(2019);
     final factory =
         TodoFactory(MockTimeGetter(dateTime), TodoLabelsFactoryImpl());
     final labels = [Label("Home"), Label("ASAP")];
     final subject = Subject("cleaning toilet");
-    final created = factory.create(subject: subject, labels: labels);
+    final created = factory.create(subject: subject, labels: labels, listID: listID);
     final todo = created.result;
     test("todo has subject that as same as arguments", () {
       expect(todo..subject(), equals(subject));

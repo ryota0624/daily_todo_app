@@ -1,4 +1,5 @@
 import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:flutter/material.dart';
@@ -12,16 +13,18 @@ class TodoCreationConfirmed extends UiEvent {
 // Create a Form widget.
 class TodoCreateForm extends StatefulWidget {
   final InputPort<CreateTodoParam> inputPort;
+  final ID<DailyTodoList> listID;
 
-  TodoCreateForm(this.inputPort);
+  TodoCreateForm({
+    @required this.inputPort,
+    @required this.listID,
+  });
 
   @override
-  TodoCreateFormState createState() => TodoCreateFormState(inputPort);
+  TodoCreateFormState createState() => TodoCreateFormState();
 }
 
 class TodoCreateFormState extends State<TodoCreateForm> {
-  final InputPort<CreateTodoParam> _inputPort;
-
   String _inputText = "";
 
   // Create a global key that uniquely identifies the Form widget
@@ -31,7 +34,7 @@ class TodoCreateFormState extends State<TodoCreateForm> {
   // not a GlobalKey<TodoCreateFormState>.
   final _formKey = GlobalKey<FormState>();
 
-  TodoCreateFormState(this._inputPort);
+  TodoCreateFormState();
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +55,8 @@ class TodoCreateFormState extends State<TodoCreateForm> {
                 if (_inputText.isEmpty) return;
                 TodoCreationConfirmed(_inputText);
 
-                _inputPort
-                    .put(CreateTodoParam(subject: _inputText, labels: []));
+                widget.inputPort
+                    .put(CreateTodoParam(listID: widget.listID, subject: _inputText, labels: []));
               },
               child: Text('Submit'),
             ),

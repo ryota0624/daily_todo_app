@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:daily_todo_app/todo/todo.dart';
 import 'package:meta/meta.dart';
 
@@ -47,21 +49,45 @@ mixin EventPublisher {
 class EventPublisherImpl with EventPublisher, EventSubscriber {
   @override
   Future<void> publish<E extends Event>(E evt) {
-    print(evt);
-    _eventlisteners.forEach((f) => f(evt));
+    _eventlisteners.forEach((_, f) => f(evt));
     return null;
   }
 
-  List _eventlisteners = []; // TODO マシな型づけ
+  static final _rand = Random.secure();
+
+  Map<SubscribeID, dynamic> _eventlisteners = Map.identity(); // TODO マシな型づけ
 
   @override
-  subscribe<E extends Event>(void Function(E evt) handler) {
-    _eventlisteners.add(handler);
+  SubscribeID subscribe<E extends Event>(void Function(E evt) handler) {
+    final id = SubscribeID(_rand.nextDouble().toString());
+    _eventlisteners[id] = handler;
+    return null;
+  }
+
+  @override
+  remove(SubscribeID id) {
+    _eventlisteners.remove(id);
     return null;
   }
 }
 
+class SubscribeID {
+  final String _value;
+  SubscribeID(this._value);
+
+  @override
+  bool operator ==(other) {
+    if (other is SubscribeID) {
+      return other._value == _value;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => _value.hashCode;
+}
+
 mixin EventSubscriber {
-  subscribe<E extends Event>(void handler(E evt));
-  // TODO unsubscribeの実装
+  SubscribeID subscribe<E extends Event>(void handler(E evt));
+  remove(SubscribeID id);
 }

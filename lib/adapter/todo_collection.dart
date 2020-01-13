@@ -15,4 +15,10 @@ class TodoCollectionOnMap extends TodoCollection {
   Future<List<Todo>> getAll() async {
     return _map.values.toList();
   }
+
+  @override
+  Future<List<Todo>> getByListID(ID<DailyTodoList> id) async {
+    final all = await getAll();
+    return all.where((todo) => todo.listID() == id).toList();
+  }
 }

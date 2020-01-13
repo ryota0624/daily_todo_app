@@ -1,12 +1,18 @@
 import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
+import 'package:flutter/cupertino.dart';
 
 class CreateTodoParam {
+  final ID<DailyTodoList> listID;
   final String subject;
   final List<String> labels;
 
-  CreateTodoParam({this.subject, this.labels});
+  CreateTodoParam({
+    @required this.listID,
+    @required this.subject,
+    @required this.labels,
+  });
 }
 
 class CreateTodoResult extends UseCaseResult {
@@ -24,14 +30,14 @@ abstract class CreateTodoUseCase
   final TodoFactory _todoFactory;
   final TodoCollection _todoCollection;
 
-  CreateTodoUseCase(
-      this._todoFactory, this._todoCollection);
+  CreateTodoUseCase(this._todoFactory, this._todoCollection);
 
   @override
   Future<CreateTodoResult> execute(CreateTodoParam input) async {
     Subject subject = Subject(input.subject);
     List<Label> labels = [];
-    final created = _todoFactory.create(subject: subject, labels: labels);
+    final created = _todoFactory.create(
+        subject: subject, labels: labels, listID: input.listID);
 
     await _todoCollection.store(created.result);
 
