@@ -4,25 +4,22 @@ import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:flutter/cupertino.dart';
 
 class CreateTodoParam {
-  final ID<DailyTodoList> listID;
-  final String subject;
-  final List<String> labels;
 
   CreateTodoParam({
     @required this.listID,
     @required this.subject,
     @required this.labels,
   });
+
+  final ID<DailyTodoList> listID;
+  final String subject;
+  final List<String> labels;
+
 }
 
 class CreateTodoResult extends UseCaseResult {
-  final String todoID;
-
   CreateTodoResult(this.todoID, List<Event> events) : super(events);
-
-  @override
-  CreateTodoResult withEvents(List<Event> evs) =>
-      CreateTodoResult(this.todoID, [...this.events, ...evs]);
+  final String todoID;
 }
 
 abstract class CreateTodoUseCase

@@ -6,7 +6,7 @@ import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/change_todo_status.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
 import 'package:daily_todo_app/usecase/usecase.dart';
-import 'package:daily_todo_app/widget/component_container.dart' as C;
+import 'package:daily_todo_app/widget/component_container.dart' as component;
 import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -27,21 +27,21 @@ class MyApp extends StatelessWidget {
 //        RouteWidgetBuilder.route<DailyTodoListRoute>(
 //            DailyTodoListPage.fromRoute),
 //      ]),
-    onGenerateRoute: routeSetting((dynamic route) {
-      route<TodoDetailRoute>(TodoDetailPage.fromRoute);
-      route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
-    }) ,
+      onGenerateRoute: routeSetting((dynamic route) {
+        route<TodoDetailRoute>(TodoDetailPage.fromRoute);
+        route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
+      }),
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Todo App'),
+      home: const MyHomePage(title: 'Todo App'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  const MyHomePage({Key key, this.title}) : super(key: key);
   final String title;
 
   @override
@@ -108,27 +108,33 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   }
 }
 
-// TODO Container.of(ctx)から取れるようにしたい
-C.Container container() {
-  return C.Container()
-      .add(TimeGetter, TimeGetterDartCoreImpl())
-      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
-      .add(TodoCollection, TodoCollectionOnMap())
-      .build<TodoFactory>((resolver) =>
-          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
-      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
-            todoCollection: resolver<TodoCollection>(),
-            todoFactory: resolver<TodoFactory>(),
-          ))
+// TODO(ryota0624): Container.of(ctx)から取れるようにしたい
+component.Container container() {
+  return component.Container()
+    .add(TimeGetter, TimeGetterDartCoreImpl())
+    .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
+    .add(TodoCollection, TodoCollectionOnMap())
+    .build<TodoFactory>((resolver) =>
+        TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+    .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
+          todoCollection: resolver<TodoCollection>(),
+          todoFactory: resolver<TodoFactory>(),
+        ))
       .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
-            todoCollection: resolver<TodoCollection>(),
-            timeGetter: resolver<TimeGetter>(),
-          ));
+          todoCollection: resolver<TodoCollection>(),
+          timeGetter: resolver<TimeGetter>(),
+        ));
 }
 
-var c = container();
+component.Container c = container();
 
 class DailyTodoListWidgetContainer extends StatelessWidget {
+  const DailyTodoListWidgetContainer({
+    Key key,
+    @required this.list,
+    @required this.todos,
+  }) : super(key: key);
+
   final DailyTodoList list;
   final Todos todos;
 
@@ -162,12 +168,6 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
       status: ChangeTodoStatus.start,
     ));
   }
-
-  const DailyTodoListWidgetContainer({
-    Key key,
-    @required this.list,
-    @required this.todos,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +219,15 @@ class TodoCanceled extends UiEvent {}
 class TodoReturnNotStartedYet extends UiEvent {}
 
 class TodoListWidget extends StatelessWidget {
+  const TodoListWidget({
+    Key key,
+    @required this.todos,
+    @required this.onPressDone,
+    @required this.onPressStart,
+    @required this.onPressCancel,
+    @required this.onPressReturnNotStartedYet,
+  }) : super(key: key);
+
   final Todos todos;
 
   final TodoApplyFunction onPressDone;
@@ -229,18 +238,10 @@ class TodoListWidget extends StatelessWidget {
 
   final TodoApplyFunction onPressReturnNotStartedYet;
 
-  const TodoListWidget({
-    Key key,
-    @required this.todos,
-    @required this.onPressDone,
-    @required this.onPressStart,
-    @required this.onPressCancel,
-    @required this.onPressReturnNotStartedYet,
-  }) : super(key: key);
-
   Widget _listView(String label, List<Todo> todos) {
-    if (todos.isEmpty) return Container();
-
+    if (todos.isEmpty) {
+      return Container();
+    }
     return Column(children: [
       Text(label),
       ListView(shrinkWrap: true, children: [
@@ -262,9 +263,9 @@ class TodoListWidget extends StatelessWidget {
     return ListView(
       shrinkWrap: true,
       children: <Widget>[
-        _listView("未完了", todos.selectNotFinished()),
-        _listView("完了", todos.selectCompleted()),
-        _listView("キャンセル済", todos.selectCanceled()),
+        _listView('未完了', todos.selectNotFinished()),
+        _listView('完了', todos.selectCompleted()),
+        _listView('キャンセル済', todos.selectCanceled()),
       ],
     );
   }
@@ -273,8 +274,6 @@ class TodoListWidget extends StatelessWidget {
 typedef TodoApplyFunction = void Function(Todo todo);
 
 class TodoListItem extends StatelessWidget {
-  final Todo todo;
-
   const TodoListItem(
       {Key key,
       @required this.todo,
@@ -283,6 +282,7 @@ class TodoListItem extends StatelessWidget {
       @required this.onPressCancel,
       @required this.onPressReturnNotStartedYet})
       : super(key: key);
+  final Todo todo;
 
   final TodoApplyFunction onPressDone;
 
@@ -292,7 +292,7 @@ class TodoListItem extends StatelessWidget {
 
   final TodoApplyFunction onPressReturnNotStartedYet;
 
-  static const double statusIconSize = 24.0;
+  static const double statusIconSize = 24;
 
   Widget get statusIcon {
     if (todo.isCompleted()) {
@@ -362,7 +362,7 @@ class TodoListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Padding(child: statusIcon, padding: EdgeInsets.only(right: 10)),
+      Padding(child: statusIcon, padding: const EdgeInsets.only(right: 10)),
       Text(todo.subject().toString()),
       Expanded(
           child: Container(
@@ -398,11 +398,12 @@ extension on StatusChangeChoice {
 }
 
 class TodoDetailPage extends StatelessWidget {
+  const TodoDetailPage({Key key, this.todoID}) : super(key: key);
+
+  // ignore: prefer_constructors_over_static_methods
   static TodoDetailPage fromRoute(TodoDetailRoute r) =>
       TodoDetailPage(todoID: r.todoID);
   final ID<Todo> todoID;
-
-  const TodoDetailPage({Key key, this.todoID}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -412,13 +413,13 @@ class TodoDetailPage extends StatelessWidget {
 }
 
 class DailyTodoListPage extends StatelessWidget {
-  static DailyTodoListPage fromRoute(DailyTodoListRoute r) =>
-      DailyTodoListPage(
+  const DailyTodoListPage({Key key, this.date}) : super(key: key);
+
+  // ignore: prefer_constructors_over_static_methods
+  static DailyTodoListPage fromRoute(DailyTodoListRoute r) => DailyTodoListPage(
         date: r.date,
       );
   final Date date;
-
-  const DailyTodoListPage({Key key, this.date}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

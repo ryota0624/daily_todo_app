@@ -5,28 +5,32 @@ import 'todo.dart';
 
 
 class TodoCreated extends DomainEvent {
+  TodoCreated(this.todoID, this.subject);
+
   final ID<Todo> todoID;
   final Subject subject;
 
-  TodoCreated(this.todoID, this.subject);
 }
 
 class TodoStatusChanged extends DomainEvent {
+  TodoStatusChanged(this.todoID, this.status);
+
   final ID<Todo> todoID;
   final Status status;
 
-  TodoStatusChanged(this.todoID, this.status);
 }
 
 class DailyTodoListCreated extends DomainEvent {
+  DailyTodoListCreated(this.listID, this.date);
+
   final ID<DailyTodoList> listID;
   final Date date;
 
-  DailyTodoListCreated(this.listID, this.date);
 }
 class DailyTodoListClosed extends DomainEvent {
+  DailyTodoListClosed(this.listID, this.date);
+
   final ID<DailyTodoList> listID;
   final Date date;
 
-  DailyTodoListClosed(this.listID, this.date);
 }

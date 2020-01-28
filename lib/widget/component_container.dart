@@ -1,40 +1,50 @@
 class ContainerBuildError extends Error {
-  final String message;
-
   ContainerBuildError(this.message);
 
+  final String message;
+
+  @override
   String toString() => message;
 }
 
 class Container {
-  Map<Type, dynamic> _components;
-
   factory Container() {
-    return Container._(Map.identity());
+    return Container._(Map<Type, dynamic>.identity());
   }
 
   Container._(this._components);
 
+  Map<Type, dynamic> _components;
+
+  Container _copy() => Container._(Map<Type, dynamic>.from(_components));
+
   Container add(Type t, dynamic component) {
+    final copied = _copy();
     if (component.runtimeType.toString() == '_Type') {
       throw ContainerBuildError(
         'component runtimeType=${component.runtimeType}',
       );
     }
-    _components.putIfAbsent(t, () => component);
+    copied._components.putIfAbsent(t, () => component);
+    return copied;
   }
 
   Container addT<T>(T component) {
+    final copied = _copy();
+
     if (component.runtimeType.toString() == '_Type') {
       throw ContainerBuildError(
         'component runtimeType=${component.runtimeType}',
       );
     }
-    _components.putIfAbsent(T, () => component);
+    copied._components.putIfAbsent(T, () => component);
+    return copied;
   }
 
-  Container register(dynamic component) {
-    _components.putIfAbsent(component.runtimeType, () => component);
+  Container register<T>(T component) {
+    final copied = _copy();
+    copied._components.putIfAbsent(component.runtimeType, () => component);
+    return copied;
   }
 
   Container build<T>(T Function(R Function<R>() resolver) builder) {

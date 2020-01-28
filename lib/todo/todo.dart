@@ -6,52 +6,57 @@ import 'package:daily_todo_app/todo/event.dart';
 import 'package:daily_todo_app/todo/label.dart';
 
 class ID<E> {
-  final String _str;
-
   ID._(this._str);
+
+  factory ID.fromString(String str) => ID._(str);
+
+  factory ID.create() => ID.fromString(
+    Random(999).nextDouble().toString(),
+  );
+
+  final String _str;
 
   @override
   String toString() => _str;
 
-  static ID<E> fromString<E>(String str) => ID._(str);
-
-  static ID<E> create<E>() => fromString(Random(999).nextDouble().toString());
 }
 
 class Subject {
-  final String _text;
-
   Subject(this._text);
+
+  final String _text;
 
   @override
   String toString() => _text;
 }
 
+// ignore: one_member_abstracts
 abstract class Description {
   bool isEmpty();
 }
 
 class TextDescription extends Description {
-  final String _text;
-
   TextDescription(this._text);
+
+  final String _text;
 
   @override
   bool isEmpty() => _text.isEmpty;
 }
 
 class EmptyDescription extends Description {
+  @override
   bool isEmpty() => true;
 }
 
 class Todos {
-  final List<Todo> _values;
-
   Todos(this._values);
 
-  Todos put(Todo t) => Todos([..._values.where((t2) => t2.id() != t.id()), t]);
+  factory Todos.empty() => Todos([]);
 
-  static Todos empty() => Todos([]);
+  final List<Todo> _values;
+
+  Todos put(Todo t) => Todos([..._values.where((t2) => t2.id() != t.id()), t]);
 
   List<Todo> selectCompleted() =>
       _values.where((todo) => todo.isCompleted()).toList();
@@ -63,11 +68,14 @@ class Todos {
       _values.where((todo) => !todo.isFinished()).toList();
 
   bool isAllFinished() {
-    return selectNotFinished().length == 0 && selectCompleted().length > 1;
+    return selectNotFinished().isEmpty && selectCompleted().length > 1;
   }
 }
 
 class Todo {
+  Todo(this._id, this._listID, this._labels, this._subject, this._description,
+      this._status, this._createdAt);
+
   final ID<Todo> _id;
   final ID<DailyTodoList> _listID;
   final TodoLabels _labels;
@@ -75,9 +83,6 @@ class Todo {
   final Description _description;
   final Status _status;
   final DateTime _createdAt;
-
-  Todo(this._id, this._listID, this._labels, this._subject, this._description,
-      this._status, this._createdAt);
 
   ID<Todo> id() => _id;
 
@@ -140,14 +145,13 @@ abstract class TodoLabels {
 }
 
 class TodoLabelsListImpl extends TodoLabels {
-  final List<Label> _list;
-
   TodoLabelsListImpl(this._list);
+
+  final List<Label> _list;
 
   @override
   TodoLabels add(Label label) {
-    var copied = _list.toList();
-    copied.add(label);
+    final copied = _list.toList()..add(label);
     return TodoLabelsListImpl(copied);
   }
 
@@ -155,7 +159,7 @@ class TodoLabelsListImpl extends TodoLabels {
   Iterable<Label> values() => _list;
 
   @override
-  bool contains(label) => _list.contains(label);
+  bool contains(Label label) => _list.contains(label);
 }
 
 abstract class Status {
@@ -179,11 +183,14 @@ abstract class Status {
 }
 
 class NotStarted extends Status {
+  @override
   InProgress start(DateTime startedAt) => InProgress(startedAt);
 
-  cancel(DateTime canceledAt) =>
+  @override
+  Status cancel(DateTime canceledAt) =>
       Cancelled(startedAt: canceledAt, cancelledAt: canceledAt);
 
+  @override
   Completed complete(DateTime completedAt) =>
       Completed(startedAt: completedAt, completedAt: completedAt);
 
@@ -198,17 +205,20 @@ class NotStarted extends Status {
 }
 
 class InProgress extends Status {
-  final DateTime startedAt;
-
   InProgress(this.startedAt);
 
-  Completed complete(DateTime date) =>
-      Completed(startedAt: startedAt, completedAt: date);
+  final DateTime startedAt;
 
-  Cancelled cancel(DateTime date) =>
-      Cancelled(startedAt: startedAt, cancelledAt: date);
+  @override
+  Completed complete(DateTime completedAt) =>
+      Completed(startedAt: startedAt, completedAt: completedAt);
 
-  Status start(_) => this;
+  @override
+  Cancelled cancel(DateTime canceledAt) =>
+      Cancelled(startedAt: startedAt, cancelledAt: canceledAt);
+
+  @override
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => false;
@@ -221,20 +231,20 @@ class InProgress extends Status {
 }
 
 class Completed extends Status {
+  Completed({this.startedAt, this.completedAt});
+
   final DateTime startedAt;
   final DateTime completedAt;
 
-  Completed({this.startedAt, this.completedAt});
+  @override
+  Status cancel(DateTime canceledAt) =>
+      Cancelled(startedAt: startedAt, cancelledAt: canceledAt);
 
   @override
-  Status cancel(DateTime date) =>
-      Cancelled(startedAt: startedAt, cancelledAt: date);
+  Status complete(DateTime completedAt) => this;
 
   @override
-  Status complete(_) => this;
-
-  @override
-  Status start(_) => this;
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => false;
@@ -247,20 +257,20 @@ class Completed extends Status {
 }
 
 class Cancelled extends Status {
+  Cancelled({this.startedAt, this.cancelledAt});
+
   final DateTime startedAt;
   final DateTime cancelledAt;
 
-  Cancelled({this.startedAt, this.cancelledAt});
+  @override
+  Status cancel(DateTime canceledAt) => this;
 
   @override
-  Status cancel(_) => this;
+  Status complete(DateTime completedAt) =>
+      Completed(startedAt: startedAt, completedAt: completedAt);
 
   @override
-  Status complete(DateTime date) =>
-      Completed(startedAt: startedAt, completedAt: date);
-
-  @override
-  Status start(_) => this;
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => true;

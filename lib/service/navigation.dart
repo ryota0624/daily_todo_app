@@ -13,21 +13,21 @@ mixin NavigationRoute {
 }
 
 class DailyTodoListRoute with NavigationRoute {
-  final Date date;
-
   DailyTodoListRoute(this.date);
 
+  final Date date;
+
   @override
-  String name() => "daily_todo_list";
+  String name() => 'daily_todo_list';
 }
 
 class TodoDetailRoute with NavigationRoute {
-  final ID<Todo> todoID;
-
   TodoDetailRoute(this.todoID);
 
+  final ID<Todo> todoID;
+
   @override
-  String name() => "todos_detail";
+  String name() => 'todos_detail';
 }
 
 class NavigationServiceImpl extends NavigationService {
@@ -43,25 +43,25 @@ class NavigationServiceImpl extends NavigationService {
     );
   }
 
+  @override
   bool pop() {
     return _navigator.pop();
   }
 }
 
-typedef _RouteWidgetBuilder<Route extends NavigationRoute> = Widget Function(
+typedef BuildRouteWidget<Route extends NavigationRoute> = Widget Function(
     Route);
 
 class RouteWidgetBuilder<Route extends NavigationRoute> {
-  final _RouteWidgetBuilder<Route> _build;
-
   RouteWidgetBuilder._(this._build);
 
-  Widget build(Route route) => _build(route);
-
-  static RouteWidgetBuilder<Route> route<Route extends NavigationRoute>(
+  factory RouteWidgetBuilder.route(
     Widget Function(Route) build,
   ) =>
       RouteWidgetBuilder._(build);
+  final BuildRouteWidget<Route> _build;
+
+  Widget build(Route route) => _build(route);
 }
 
 Route Function(RouteSettings) routeSetting(
@@ -69,7 +69,7 @@ Route Function(RouteSettings) routeSetting(
 ) {
   final routes = <RouteWidgetBuilder>[];
   settingFn(<R extends NavigationRoute>(Widget Function(R) build) {
-    routes.add(RouteWidgetBuilder.route<R>(build));
+    routes.add(RouteWidgetBuilder<R>.route(build));
   });
   return onGenerateRoute(routes);
 }

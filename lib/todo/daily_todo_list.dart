@@ -36,7 +36,8 @@ class DailyTodoList {
 //  }
 //
 //  DailyTodoList addTodo(Todo todo) => DailyTodoList(_date, _todos.put(todo));
-//  DailyTodoList modifyTodo(Todo todo) => DailyTodoList(_date, _todos.put(todo));
+//  DailyTodoList
+//    modifyTodo(Todo todo) => DailyTodoList(_date, _todos.put(todo));
 //
 //  bool isAllTodoFinished() => _todos.isAllFinished();
 }

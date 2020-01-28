@@ -4,7 +4,7 @@ import 'package:daily_todo_app/todo/todo.dart';
 import 'package:meta/meta.dart';
 
 abstract class Event {
-  final ID<DomainEvent> id = ID.create<DomainEvent>();
+  final ID<DomainEvent> id = ID<DomainEvent>.create();
   final DateTime occurredAt = DateTime.now();
 }
 
@@ -13,10 +13,10 @@ abstract class UiEvent extends Event {}
 abstract class DomainEvent extends Event {}
 
 class WithEvent<E extends DomainEvent, Other> {
+  WithEvent(this.event, this.result);
+
   final E event;
   final Other result;
-
-  WithEvent(this.event, this.result);
 }
 
 mixin WithEventPublisher {
@@ -71,9 +71,10 @@ class EventPublisherImpl with EventPublisher, EventSubscriber {
 }
 
 class SubscribeID {
+  SubscribeID(this._value);
+
   final String _value;
 
-  SubscribeID(this._value);
 
   @override
   bool operator ==(dynamic other) {

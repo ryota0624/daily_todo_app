@@ -1,6 +1,7 @@
 class Label {
-  final String _value;
   Label(this._value);
+
+  final String _value;
 
   @override
   String toString() => _value;

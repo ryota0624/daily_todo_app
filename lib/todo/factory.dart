@@ -6,17 +6,18 @@ import 'package:daily_todo_app/todo/label.dart';
 import 'package:meta/meta.dart';
 
 class TodoFactory {
+  TodoFactory(this._timeGetter, this._labelsFactory);
+
   final TimeGetter _timeGetter;
   final TodoLabelsFactory _labelsFactory;
 
-  TodoFactory(this._timeGetter, this._labelsFactory);
 
   WithEvent<TodoCreated, Todo> create({
     @required ID<DailyTodoList> listID,
     @required Subject subject,
     @required List<Label> labels,
   }) {
-    final id = ID.create<Todo>();
+    final id = ID<Todo>.create();
     final status = NotStarted();
     final createdAt = _timeGetter.now();
     final todo = Todo(
