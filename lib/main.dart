@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/service/navigation.dart';
 import 'package:daily_todo_app/todo.dart';
 import 'package:daily_todo_app/usecase/change_todo_status.dart';
 import 'package:daily_todo_app/usecase/create_todo.dart';
@@ -19,6 +20,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+//      onGenerateRoute: onGenerateRoute([
+//        RouteWidgetBuilder.route<TodoDetailRoute>(
+//          TodoDetailPage.fromRoute,
+//        ),
+//        RouteWidgetBuilder.route<DailyTodoListRoute>(
+//            DailyTodoListPage.fromRoute),
+//      ]),
+    onGenerateRoute: routeSetting((route) {
+      route<TodoDetailRoute>(TodoDetailPage.fromRoute);
+      route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
+    }) ,
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -41,8 +53,8 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   DailyTodoList _selected;
   ID<DailyTodoList> selectedListID;
   TodoCollection _todoCollection = c.resolve<TodoCollection>();
-  DailyTodoListCollection _dailyTodoListCollection = c.resolve<DailyTodoListCollection>();
-
+  DailyTodoListCollection _dailyTodoListCollection =
+      c.resolve<DailyTodoListCollection>();
 
   void reloadTodos() async {
     var todos = await _todoCollection.getByListID(_selected.id);
@@ -52,7 +64,6 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   }
 
   void reloadDailyTodoList() async {
-
     if (_selected == null) {
       _selected = await _dailyTodoListCollection.getByDate(Date.today());
     } else {
@@ -87,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
           constraints: BoxConstraints.expand(),
           child: Padding(
             padding: EdgeInsets.all(20.0),
-            child: DailyTodoListPage(
+            child: DailyTodoListWidgetContainer(
               list: null,
               todos: _todos,
             ),
@@ -116,7 +127,7 @@ C.Container container() {
 
 var c = container();
 
-class DailyTodoListPage extends StatelessWidget {
+class DailyTodoListWidgetContainer extends StatelessWidget {
   final DailyTodoList list;
   final Todos todos;
 
@@ -151,7 +162,7 @@ class DailyTodoListPage extends StatelessWidget {
     ));
   }
 
-  const DailyTodoListPage({
+  const DailyTodoListWidgetContainer({
     Key key,
     @required this.list,
     @required this.todos,
@@ -382,5 +393,35 @@ extension on StatusChangeChoice {
       default:
         throw InvalidEnumArgumentException(this);
     }
+  }
+}
+
+class TodoDetailPage extends StatelessWidget {
+  static TodoDetailPage fromRoute(TodoDetailRoute r) =>
+      TodoDetailPage(todoID: r.todoID);
+  final ID<Todo> todoID;
+
+  const TodoDetailPage({Key key, this.todoID}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return null;
+  }
+}
+
+class DailyTodoListPage extends StatelessWidget {
+  static DailyTodoListPage fromRoute(DailyTodoListRoute r) =>
+      DailyTodoListPage(
+        date: r.date,
+      );
+  final Date date;
+
+  const DailyTodoListPage({Key key, this.date}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return null; // DailyTodoListWidgetContainer(list: null, todos: null);
   }
 }
