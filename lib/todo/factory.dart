@@ -7,7 +7,7 @@ import 'package:meta/meta.dart';
 
 class TodoFactory {
   final TimeGetter _timeGetter;
-  final TodoLabelsFactory<List<Label>> _labelsFactory;
+  final TodoLabelsFactory _labelsFactory;
 
   TodoFactory(this._timeGetter, this._labelsFactory);
 
@@ -38,6 +38,7 @@ class TodoFactory {
   }
 }
 
+// ignore: one_member_abstracts
 abstract class TimeGetter {
   DateTime now();
 }
@@ -47,11 +48,12 @@ class TimeGetterDartCoreImpl extends TimeGetter {
   DateTime now() => DateTime.now();
 }
 
-abstract class TodoLabelsFactory<L extends Iterable> {
-  TodoLabels create(L l);
+// ignore: one_member_abstracts
+abstract class TodoLabelsFactory {
+  TodoLabels create(Iterable<Label> l);
 }
 
-class TodoLabelsFactoryImpl extends TodoLabelsFactory<List<Label>> {
+class TodoLabelsFactoryImpl extends TodoLabelsFactory {
   @override
-  TodoLabels create(List<Label> l) => TodoLabelsListImpl(l.toList());
+  TodoLabels create(Iterable<Label> l) => TodoLabelsListImpl(l.toList());
 }

@@ -4,16 +4,10 @@ import 'package:daily_todo_app/event/event.dart';
 import 'package:meta/meta.dart';
 
 abstract class UseCaseResult {
-  final List<Event> events;
-
   UseCaseResult(this.events);
 
-  UseCaseResult.empty(): this.events = [];
-
-  UseCaseResult withEvents(List<Event> evs);
-
-  R withEvent<R extends UseCaseResult>(Event e) =>
-      withEvents([...this.events, ...[e]]);
+  UseCaseResult.empty() : events = [];
+  final List<Event> events;
 }
 
 mixin InputPort<I> {
@@ -21,14 +15,14 @@ mixin InputPort<I> {
 }
 
 mixin OutputPort<O> {
-  out(O output);
+  void out(O output);
 }
 
-mixin EventOutputPort<O extends UseCaseResult> on OutputPort<O>, WithEventPublisher {
-  out(O output) {
-    for (final evt in output.events) {
-      eventPublisher.publish(evt);
-    }
+mixin EventOutputPort<O extends UseCaseResult>
+on OutputPort<O>, WithEventPublisher {
+  @override
+  void out(O output) {
+    output.events.forEach(eventPublisher.publish);
   }
 }
 
@@ -36,37 +30,39 @@ mixin StreamOutputPresenter<O extends UseCaseResult> on EventOutputPort<O> {
   StreamSink<O> stream;
 
   @override
-  out(O output) {
+  void out(O output) {
     stream.add(output);
     super.out(output);
-    return null;
   }
 }
-mixin CallbackOutputPresenter<O  extends UseCaseResult> on EventOutputPort<O> {
+mixin CallbackOutputPresenter<O extends UseCaseResult> on EventOutputPort<O> {
   void Function(O output) callback;
 
   @override
-  out(UseCaseResult output) {
+  void out(O output) {
     callback(output);
     super.out(output);
-    return null;
   }
 }
 mixin NoneOutputPort<O extends UseCaseResult> on EventOutputPort<O> {
   @override
-  out(UseCaseResult output) {
+  void out(O output) {
     super.out(output);
-    return null;
   }
 }
 
-abstract class UseCase<I, O extends UseCaseResult> with OutputPort<O>, WithEventPublisher, InputPort<I>, EventOutputPort<O> {
+abstract class UseCase<I, O extends UseCaseResult>
+    with OutputPort<O>, WithEventPublisher, InputPort<I>, EventOutputPort<O> {
   @protected
-  Future<UseCaseResult> execute(I input);
+  Future<O> execute(I input);
+
+  Future<void> exec(I input) async {
+    final output = await execute(input);
+    super.out(output);
+  }
 
   @override
-  void put(I input) async {
-    var output = await execute(input);
-    super.out(output);
+  void put(I input) {
+    exec(input);
   }
 }

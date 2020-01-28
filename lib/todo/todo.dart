@@ -136,7 +136,7 @@ abstract class TodoLabels {
 
   TodoLabels add(Label label);
 
-  bool contains(label);
+  bool contains(Label label);
 }
 
 class TodoLabelsListImpl extends TodoLabels {

@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
 //        RouteWidgetBuilder.route<DailyTodoListRoute>(
 //            DailyTodoListPage.fromRoute),
 //      ]),
-    onGenerateRoute: routeSetting((route) {
+    onGenerateRoute: routeSetting((dynamic route) {
       route<TodoDetailRoute>(TodoDetailPage.fromRoute);
       route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
     }) ,
@@ -49,44 +49,45 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
+  _MyHomePageState() {
+    // containerから取りたい
+    subscribeID = eventSubscriber.subscribe((Event evt) {
+      // TODO(ryota0624): eventの種類によって List or Todoのreloadを分ける
+      reloadTodos();
+    });
+  }
+
   Todos _todos = Todos.empty();
   DailyTodoList _selected;
   ID<DailyTodoList> selectedListID;
-  TodoCollection _todoCollection = c.resolve<TodoCollection>();
-  DailyTodoListCollection _dailyTodoListCollection =
+  final TodoCollection _todoCollection = c.resolve<TodoCollection>();
+  final DailyTodoListCollection _dailyTodoListCollection =
       c.resolve<DailyTodoListCollection>();
 
-  void reloadTodos() async {
-    var todos = await _todoCollection.getByListID(_selected.id);
+  Future<void> reloadTodos() async {
+    final todos = await _todoCollection.getByListID(_selected.id);
     setState(() {
       _todos = Todos(todos);
     });
   }
 
-  void reloadDailyTodoList() async {
+  Future<void> reloadDailyTodoList() async {
     if (_selected == null) {
       _selected = await _dailyTodoListCollection.getByDate(Date.today());
     } else {
       _selected = await _dailyTodoListCollection.get(_selected.id);
     }
 
-    reloadTodos();
+    await reloadTodos();
   }
 
+  @override
   void dispose() {
     eventSubscriber.remove(subscribeID);
     super.dispose();
   }
 
   SubscribeID subscribeID;
-
-  _MyHomePageState() {
-    // containerから取りたい
-    subscribeID = eventSubscriber.subscribe((evt) {
-      // TODO eventの種類によって List or Todoのreloadを分ける
-      reloadTodos();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +96,9 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
         title: Text(widget.title),
       ),
       body: ConstrainedBox(
-          constraints: BoxConstraints.expand(),
+          constraints: const BoxConstraints.expand(),
           child: Padding(
-            padding: EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(20),
             child: DailyTodoListWidgetContainer(
               list: null,
               todos: _todos,
@@ -137,28 +138,28 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
   void onPressDone(Todo todo) {
     changeTodoStatusUseCase.put(ChangeTodoStatusParam(
       todoID: todo.id(),
-      status: ChangeTodoStatus.Complete,
+      status: ChangeTodoStatus.complete,
     ));
   }
 
   void onPressCancel(Todo todo) {
     changeTodoStatusUseCase.put(ChangeTodoStatusParam(
       todoID: todo.id(),
-      status: ChangeTodoStatus.Cancel,
+      status: ChangeTodoStatus.cancel,
     ));
   }
 
   void onPressStart(Todo todo) {
     changeTodoStatusUseCase.put(ChangeTodoStatusParam(
       todoID: todo.id(),
-      status: ChangeTodoStatus.Start,
+      status: ChangeTodoStatus.start,
     ));
   }
 
   void onPressReturnNotStartedYet(Todo todo) {
     changeTodoStatusUseCase.put(ChangeTodoStatusParam(
       todoID: todo.id(),
-      status: ChangeTodoStatus.Start,
+      status: ChangeTodoStatus.start,
     ));
   }
 
@@ -327,7 +328,7 @@ class TodoListItem extends StatelessWidget {
         ));
   }
 
-  onSelectedStatusChangeChoice(StatusChangeChoice c) {
+  void onSelectedStatusChangeChoice(StatusChangeChoice c) {
     switch (c) {
       case StatusChangeChoice.asCancel:
         onPressCancel(todo);
@@ -383,13 +384,13 @@ extension on StatusChangeChoice {
   String asString() {
     switch (this) {
       case StatusChangeChoice.asCancel:
-        return "キャンセル";
+        return 'キャンセル';
       case StatusChangeChoice.asNoStartedYet:
-        return "未着手";
+        return '未着手';
       case StatusChangeChoice.asComplete:
-        return "完了";
+        return '完了';
       case StatusChangeChoice.asInProgress:
-        return "実施中";
+        return '実施中';
       default:
         throw InvalidEnumArgumentException(this);
     }
@@ -405,7 +406,7 @@ class TodoDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    // TODO(ryota0624): implement build
     return null;
   }
 }
@@ -421,7 +422,7 @@ class DailyTodoListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    // TODO(ryota0624): implement build
     return null; // DailyTodoListWidgetContainer(list: null, todos: null);
   }
 }

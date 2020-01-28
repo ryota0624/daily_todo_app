@@ -27,15 +27,16 @@ class CreateTodoResult extends UseCaseResult {
 
 abstract class CreateTodoUseCase
     extends UseCase<CreateTodoParam, CreateTodoResult> {
+  CreateTodoUseCase(this._todoFactory, this._todoCollection);
+
   final TodoFactory _todoFactory;
   final TodoCollection _todoCollection;
 
-  CreateTodoUseCase(this._todoFactory, this._todoCollection);
 
   @override
   Future<CreateTodoResult> execute(CreateTodoParam input) async {
-    Subject subject = Subject(input.subject);
-    List<Label> labels = [];
+    final subject = Subject(input.subject);
+    final labels = <Label>[];
     final created = _todoFactory.create(
         subject: subject, labels: labels, listID: input.listID);
 

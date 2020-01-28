@@ -41,7 +41,6 @@ mixin MixinEventSubscriber implements WithEventSubscriber {
   EventSubscriber get eventSubscriber => MixinEventPublisher._publisher;
 }
 
-
 mixin EventPublisher {
   Future<void> publish<E extends Event>(E evt);
 }
@@ -49,34 +48,35 @@ mixin EventPublisher {
 class EventPublisherImpl with EventPublisher, EventSubscriber {
   @override
   Future<void> publish<E extends Event>(E evt) {
-    _eventlisteners.forEach((_, f) => f(evt));
+    _eventListeners.forEach((_, dynamic f) => f(evt));
     return null;
   }
 
   static final _rand = Random.secure();
 
-  Map<SubscribeID, dynamic> _eventlisteners = Map.identity(); // TODO マシな型づけ
+  final Map<SubscribeID, dynamic> _eventListeners =
+      Map<SubscribeID, dynamic>.identity(); // TODO(ryota0624): マシな型づけ
 
   @override
   SubscribeID subscribe<E extends Event>(void Function(E evt) handler) {
     final id = SubscribeID(_rand.nextDouble().toString());
-    _eventlisteners[id] = handler;
+    _eventListeners[id] = handler;
     return null;
   }
 
   @override
-  remove(SubscribeID id) {
-    _eventlisteners.remove(id);
-    return null;
+  void remove(SubscribeID id) {
+    _eventListeners.remove(id);
   }
 }
 
 class SubscribeID {
   final String _value;
+
   SubscribeID(this._value);
 
   @override
-  bool operator ==(other) {
+  bool operator ==(dynamic other) {
     if (other is SubscribeID) {
       return other._value == _value;
     }
@@ -88,6 +88,7 @@ class SubscribeID {
 }
 
 mixin EventSubscriber {
-  SubscribeID subscribe<E extends Event>(void handler(E evt));
-  remove(SubscribeID id);
+  SubscribeID subscribe<E extends Event>(void Function(E) handler);
+
+  void remove(SubscribeID id);
 }

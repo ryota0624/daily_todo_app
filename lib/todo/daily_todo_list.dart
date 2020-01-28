@@ -2,34 +2,33 @@ import 'package:daily_todo_app/todo/todo.dart';
 import 'package:flutter/cupertino.dart';
 
 class Date {
-  final int year;
-  final int month;
-  final int day;
-
-  Date({this.year, this.month, this.day});
-
-  static fromDateTime(DateTime date) {
-    return Date(year: date.year, month: date.month, day: date.day);
-  }
-
-  DateTime asDateTime() => DateTime(year, month, day);
+  const Date({this.year, this.month, this.day});
+  Date.fromDateTime(DateTime date)
+      :
+        year = date.year,
+        month = date.month,
+        day = date.day;
 
   factory Date.today() {
     final now = DateTime.now();
     return Date.fromDateTime(now);
   }
+
+  final int year;
+  final int month;
+  final int day;
+  DateTime asDateTime() => DateTime(year, month, day);
+
 }
 
 class DailyTodoList {
-  final ID<DailyTodoList> id;
-
-  final Date date;
-
-
   DailyTodoList({
     @required this.id,
     @required this.date,
   });
+  final ID<DailyTodoList> id;
+  final Date date;
+
 
 //  // DomainService 未達成を引きついで次の日のリストを作る
 //  DailyTodoList createNextDayTodoList(Todos todos) {
@@ -46,6 +45,7 @@ abstract class DailyTodoListCollection {
   Future<void> store(DailyTodoList todo);
 
   Future<DailyTodoList> get(ID<DailyTodoList> id);
+
   Future<DailyTodoList> getByDate(Date date);
 
   Future<List<DailyTodoList>> getAll();

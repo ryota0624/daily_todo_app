@@ -65,10 +65,10 @@ class RouteWidgetBuilder<Route extends NavigationRoute> {
 }
 
 Route Function(RouteSettings) routeSetting(
-    void Function(dynamic) settingFn) {
+  void Function(dynamic) settingFn,
+) {
   final routes = <RouteWidgetBuilder>[];
-  settingFn(
-      <R extends NavigationRoute>(Widget Function(R) build) {
+  settingFn(<R extends NavigationRoute>(Widget Function(R) build) {
     routes.add(RouteWidgetBuilder.route<R>(build));
   });
   return onGenerateRoute(routes);
@@ -79,7 +79,7 @@ Route Function(RouteSettings) onGenerateRoute(
 ) {
   return (RouteSettings routeSettings) {
     String _routeWidgetBuilderType(NavigationRoute route) =>
-        "RouteWidgetBuilder<${route.runtimeType.toString()}>";
+        'RouteWidgetBuilder<${route.runtimeType.toString()}>';
 
     if (routeSettings.arguments is NavigationRoute) {
       final route = routeSettings.arguments as NavigationRoute;
@@ -87,7 +87,9 @@ Route Function(RouteSettings) onGenerateRoute(
           builder.runtimeType.toString() == _routeWidgetBuilderType(route));
 
       if (matchedBuilder != null) {
-        return MaterialPageRoute(builder: (_) => matchedBuilder.build(route));
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => matchedBuilder.build(route),
+        );
       }
     }
 
