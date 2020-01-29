@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:daily_todo_app/adapter/daily_todo_list_collection.dart';
 import 'package:daily_todo_app/event/event.dart';
 import 'package:daily_todo_app/service/navigation.dart';
 import 'package:daily_todo_app/todo.dart';
@@ -10,6 +11,7 @@ import 'package:daily_todo_app/widget/component_container.dart' as component;
 import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'adapter/todo_collection.dart';
 import 'errors/enum_error.dart';
 
@@ -62,10 +64,12 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
   ID<DailyTodoList> selectedListID;
   final TodoCollection _todoCollection = c.resolve<TodoCollection>();
   final DailyTodoListCollection _dailyTodoListCollection =
-      c.resolve<DailyTodoListCollection>();
+  c.resolve<DailyTodoListCollection>();
 
   Future<void> reloadTodos() async {
-    final todos = await _todoCollection.getByListID(_selected.id);
+    final todos = await (_selected == null
+        ? _todoCollection.getAll()
+        : _todoCollection.getByListID(_selected.id));
     setState(() {
       _todos = Todos(todos);
     });
@@ -111,19 +115,22 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
 // TODO(ryota0624): Container.of(ctx)から取れるようにしたい
 component.Container container() {
   return component.Container()
-    .add(TimeGetter, TimeGetterDartCoreImpl())
-    .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
-    .add(TodoCollection, TodoCollectionOnMap())
-    .build<TodoFactory>((resolver) =>
-        TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
-    .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
-          todoCollection: resolver<TodoCollection>(),
-          todoFactory: resolver<TodoFactory>(),
-        ))
-      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
-          todoCollection: resolver<TodoCollection>(),
-          timeGetter: resolver<TimeGetter>(),
-        ));
+      .add(TimeGetter, TimeGetterDartCoreImpl())
+      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
+      .add(TodoCollection, TodoCollectionOnMap())
+      .add(DailyTodoListCollection, DailyTodoListCollectionOnMap())
+      .build<TodoFactory>((resolver) =>
+      TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+      .build<CreateTodoUseCase>((resolver) =>
+      CreateTodoUseCaseImpl(
+        todoCollection: resolver<TodoCollection>(),
+        todoFactory: resolver<TodoFactory>(),
+      ))
+      .build<ChangeTodoStatusUseCase>((resolver) =>
+      ChangeTodoStatusUseCaseImpl(
+        todoCollection: resolver<TodoCollection>(),
+        timeGetter: resolver<TimeGetter>(),
+      ));
 }
 
 component.Container c = container();
@@ -185,9 +192,12 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
           alignment: Alignment.topCenter,
         ),
         Container(
-          child: TodoCreateForm(
-            listID: null,
-            inputPort: c.resolve<CreateTodoUseCase>(),
+          child: ChangeNotifierProvider.value(
+            value: TodoCreationModelFWidget(),
+            child: TodoCreateForm(
+              listID: null,
+              inputPort: c.resolve<CreateTodoUseCase>(),
+            ),
           ),
           alignment: Alignment.bottomCenter,
         ),
@@ -274,13 +284,12 @@ class TodoListWidget extends StatelessWidget {
 typedef TodoApplyFunction = void Function(Todo todo);
 
 class TodoListItem extends StatelessWidget {
-  const TodoListItem(
-      {Key key,
-      @required this.todo,
-      @required this.onPressDone,
-      @required this.onPressStart,
-      @required this.onPressCancel,
-      @required this.onPressReturnNotStartedYet})
+  const TodoListItem({Key key,
+    @required this.todo,
+    @required this.onPressDone,
+    @required this.onPressStart,
+    @required this.onPressCancel,
+    @required this.onPressReturnNotStartedYet})
       : super(key: key);
   final Todo todo;
 
@@ -366,9 +375,9 @@ class TodoListItem extends StatelessWidget {
       Text(todo.subject().toString()),
       Expanded(
           child: Container(
-        child: statusChangeMenu,
-        alignment: Alignment.centerRight,
-      ))
+            child: statusChangeMenu,
+            alignment: Alignment.centerRight,
+          ))
     ]);
   }
 }
@@ -416,7 +425,8 @@ class DailyTodoListPage extends StatelessWidget {
   const DailyTodoListPage({Key key, this.date}) : super(key: key);
 
   // ignore: prefer_constructors_over_static_methods
-  static DailyTodoListPage fromRoute(DailyTodoListRoute r) => DailyTodoListPage(
+  static DailyTodoListPage fromRoute(DailyTodoListRoute r) =>
+      DailyTodoListPage(
         date: r.date,
       );
   final Date date;
