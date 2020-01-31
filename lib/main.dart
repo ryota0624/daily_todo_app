@@ -29,69 +29,99 @@ class MyApp extends StatelessWidget {
 //        RouteWidgetBuilder.route<DailyTodoListRoute>(
 //            DailyTodoListPage.fromRoute),
 //      ]),
-      onGenerateRoute: routeSetting((dynamic route) {
-        route<TodoDetailRoute>(TodoDetailPage.fromRoute);
-        route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
-      }),
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Todo App'),
-    );
+        onGenerateRoute: routeSetting((dynamic route) {
+          route<TodoDetailRoute>(TodoDetailPage.fromRoute);
+          route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
+        }),
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: ChangeNotifierProvider<DailyTodoListScreenModel>.value(
+          value: DailyTodoListScreenModelFWidget(
+            container().resolve<DailyTodoListCollection>(),
+            container().resolve<TodoCollection>(),
+          ),
+          child: Consumer<DailyTodoListScreenModel>(
+            builder: (ctx, model, _) =>
+                DailyTodoListScreen(title: 'Todo App', model: model),
+          ),
+        ));
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
-  _MyHomePageState() {
-    // containerから取りたい
-    subscribeID = eventSubscriber.subscribe((Event evt) {
+abstract class DailyTodoListScreenModel
+    with WithEventSubscriber, ChangeNotifier {
+  DailyTodoListScreenModel(this.dailyTodoListCollection, this.todoCollection) {
+    _subscribeID = eventSubscriber.subscribe((Event evt) {
       // TODO(ryota0624): eventの種類によって List or Todoのreloadを分ける
       reloadTodos();
     });
   }
 
-  Todos _todos = Todos.empty();
+  final TodoCollection todoCollection;
+  final DailyTodoListCollection dailyTodoListCollection;
+
+  // mutable
+  SubscribeID _subscribeID;
   DailyTodoList _selected;
   ID<DailyTodoList> selectedListID;
-  final TodoCollection _todoCollection = c.resolve<TodoCollection>();
-  final DailyTodoListCollection _dailyTodoListCollection =
-  c.resolve<DailyTodoListCollection>();
+  Todos _todos = Todos.empty();
+
+  // getters
+  Todos get todos => _todos;
+
+  DailyTodoList get selectedList => _selected;
 
   Future<void> reloadTodos() async {
     final todos = await (_selected == null
-        ? _todoCollection.getAll()
-        : _todoCollection.getByListID(_selected.id));
-    setState(() {
-      _todos = Todos(todos);
-    });
+        ? todoCollection.getAll()
+        : todoCollection.getByListID(_selected.id));
+    _todos = Todos(todos);
+    notifyListeners();
   }
 
   Future<void> reloadDailyTodoList() async {
     if (_selected == null) {
-      _selected = await _dailyTodoListCollection.getByDate(Date.today());
+      _selected = await dailyTodoListCollection.getByDate(Date.today());
     } else {
-      _selected = await _dailyTodoListCollection.get(_selected.id);
+      _selected = await dailyTodoListCollection.get(_selected.id);
     }
+    _todos = Todos.empty();
+    notifyListeners();
 
     await reloadTodos();
   }
 
   @override
   void dispose() {
-    eventSubscriber.remove(subscribeID);
+    eventSubscriber.remove(_subscribeID);
     super.dispose();
   }
+}
 
-  SubscribeID subscribeID;
+class DailyTodoListScreenModelFWidget extends DailyTodoListScreenModel
+    with MixinEventSubscriber {
+  DailyTodoListScreenModelFWidget(
+    DailyTodoListCollection dailyTodoListCollection,
+    TodoCollection todoCollection,
+  ) : super(dailyTodoListCollection, todoCollection);
+}
+
+class DailyTodoListScreen extends StatefulWidget {
+  const DailyTodoListScreen({Key key, this.title, this.model})
+      : super(key: key);
+  final String title;
+  final DailyTodoListScreenModel model;
+
+  @override
+  _DailyTodoListScreen createState() => _DailyTodoListScreen();
+}
+
+class _DailyTodoListScreen extends State<DailyTodoListScreen> {
+//  final TodoCollection _todoCollection = c.resolve<TodoCollection>();
+//  final DailyTodoListCollection _dailyTodoListCollection =
+//      c.resolve<DailyTodoListCollection>();
 
   @override
   Widget build(BuildContext context) {
@@ -104,8 +134,8 @@ class _MyHomePageState extends State<MyHomePage> with MixinEventSubscriber {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: DailyTodoListWidgetContainer(
-              list: null,
-              todos: _todos,
+              list: widget.model.selectedList,
+              todos: widget.model.todos,
             ),
           )),
     );
@@ -120,17 +150,15 @@ component.Container container() {
       .add(TodoCollection, TodoCollectionOnMap())
       .add(DailyTodoListCollection, DailyTodoListCollectionOnMap())
       .build<TodoFactory>((resolver) =>
-      TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
-      .build<CreateTodoUseCase>((resolver) =>
-      CreateTodoUseCaseImpl(
-        todoCollection: resolver<TodoCollection>(),
-        todoFactory: resolver<TodoFactory>(),
-      ))
-      .build<ChangeTodoStatusUseCase>((resolver) =>
-      ChangeTodoStatusUseCaseImpl(
-        todoCollection: resolver<TodoCollection>(),
-        timeGetter: resolver<TimeGetter>(),
-      ));
+          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            todoFactory: resolver<TodoFactory>(),
+          ))
+      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            timeGetter: resolver<TimeGetter>(),
+          ));
 }
 
 component.Container c = container();
@@ -192,11 +220,10 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
           alignment: Alignment.topCenter,
         ),
         Container(
-          child: ChangeNotifierProvider.value(
-            value: TodoCreationModelFWidget(),
+          child: ChangeNotifierProvider<TodoCreationModel>.value(
+            value: TodoCreationModelFWidget(c.resolve<CreateTodoUseCase>()),
             child: TodoCreateForm(
-              listID: null,
-              inputPort: c.resolve<CreateTodoUseCase>(),
+              listID: list.id,
             ),
           ),
           alignment: Alignment.bottomCenter,
@@ -284,12 +311,13 @@ class TodoListWidget extends StatelessWidget {
 typedef TodoApplyFunction = void Function(Todo todo);
 
 class TodoListItem extends StatelessWidget {
-  const TodoListItem({Key key,
-    @required this.todo,
-    @required this.onPressDone,
-    @required this.onPressStart,
-    @required this.onPressCancel,
-    @required this.onPressReturnNotStartedYet})
+  const TodoListItem(
+      {Key key,
+      @required this.todo,
+      @required this.onPressDone,
+      @required this.onPressStart,
+      @required this.onPressCancel,
+      @required this.onPressReturnNotStartedYet})
       : super(key: key);
   final Todo todo;
 
@@ -375,9 +403,9 @@ class TodoListItem extends StatelessWidget {
       Text(todo.subject().toString()),
       Expanded(
           child: Container(
-            child: statusChangeMenu,
-            alignment: Alignment.centerRight,
-          ))
+        child: statusChangeMenu,
+        alignment: Alignment.centerRight,
+      ))
     ]);
   }
 }
@@ -425,8 +453,7 @@ class DailyTodoListPage extends StatelessWidget {
   const DailyTodoListPage({Key key, this.date}) : super(key: key);
 
   // ignore: prefer_constructors_over_static_methods
-  static DailyTodoListPage fromRoute(DailyTodoListRoute r) =>
-      DailyTodoListPage(
+  static DailyTodoListPage fromRoute(DailyTodoListRoute r) => DailyTodoListPage(
         date: r.date,
       );
   final Date date;

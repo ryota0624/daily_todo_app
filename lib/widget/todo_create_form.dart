@@ -9,44 +9,45 @@ mixin Notifier {
   void notifyListeners();
 }
 
-class MockChangeNotifier implements ChangeNotifier {
-  @override
-  void addListener(listener) {
-    // TODO: implement addListener
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-  }
-
-  @override
-  // TODO: implement hasListeners
-  bool get hasListeners => null;
-
-  @override
-  void notifyListeners() {
-    // TODO: implement notifyListeners
-  }
-
-  @override
-  void removeListener(listener) {
-    // TODO: implement removeListener
-  }
-}
-
 abstract class TodoCreationModel implements ChangeNotifier {
+  TodoCreationModel(this.inputPort);
+
+  final InputPort<CreateTodoParam> inputPort;
+
   String _text;
+  final Set<String> _labels = {};
 
   void inputText(String text) {
     _text = text;
     notifyListeners();
   }
 
+  void addLabel(String label) {
+    _labels.add(label);
+    notifyListeners();
+  }
+
+  void submitCreation(ID<DailyTodoList> listID) {
+    if (getText().isEmpty) {
+      return;
+    }
+    inputPort.put(
+      CreateTodoParam(
+        listID: listID,
+        subject: getText(),
+        labels: getLabels().toList(),
+      ),
+    );
+  }
+
   String getText() => _text;
+
+  Set<String> getLabels() => Set.from(_labels);
 }
 
 class TodoCreationModelFWidget extends TodoCreationModel with ChangeNotifier {
+  TodoCreationModelFWidget(InputPort<CreateTodoParam> inputPort)
+      : super(inputPort);
 }
 
 class TodoCreationConfirmed extends UiEvent {
@@ -58,11 +59,9 @@ class TodoCreationConfirmed extends UiEvent {
 // Create a Form widget.
 class TodoCreateForm extends StatefulWidget {
   const TodoCreateForm({
-    @required this.inputPort,
     @required this.listID,
   });
 
-  final InputPort<CreateTodoParam> inputPort;
   final ID<DailyTodoList> listID;
 
   @override
@@ -70,7 +69,6 @@ class TodoCreateForm extends StatefulWidget {
 }
 
 class TodoCreateFormState extends State<TodoCreateForm> {
-
   // Create a global key that uniquely identifies the Form widget
   // and allows validation of the form.
   //
@@ -80,32 +78,19 @@ class TodoCreateFormState extends State<TodoCreateForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TodoCreationModelFWidget>(
+    return Consumer<TodoCreationModel>(
         builder: (_, model, __) => Form(
               key: _formKey,
               child: Row(
                 children: <Widget>[
-                  Flexible(child: TextFormField(
-                    onChanged: (text) {
-                       model.inputText(text);
-                    },
+                  Flexible(
+                      child: TextFormField(
+                    onChanged: model.inputText,
                   )),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: RaisedButton(
-                      onPressed: () {
-                        if (model.getText().isEmpty) {
-                          return;
-                        }
-                        TodoCreationConfirmed(model.getText());
-                        widget.inputPort.put(
-                          CreateTodoParam(
-                            listID: widget.listID,
-                            subject: model.getText(),
-                            labels: [],
-                          ),
-                        );
-                      },
+                      onPressed: () => model.submitCreation(widget.listID),
                       child: const Text('Submit'),
                     ),
                   ),
