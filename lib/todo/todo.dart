@@ -1,36 +1,92 @@
 import 'dart:math';
 
+import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/todo.dart';
+import 'package:daily_todo_app/todo/event.dart';
 import 'package:daily_todo_app/todo/label.dart';
 
 class ID<E> {
-  final String _str;
-
   ID._(this._str);
+
+  factory ID.fromString(String str) => ID._(str);
+
+  factory ID.create() => ID.fromString(
+    Random(999).nextDouble().toString(),
+  );
+
+  final String _str;
 
   @override
   String toString() => _str;
 
-  static ID<E> fromString<E>(String str) => ID._(str);
-
-  static ID<E> create<E>() => fromString(Random(999).nextDouble().toString());
 }
 
-class Subject {}
+class Subject {
+  Subject(this._text);
 
-class Description {}
+  final String _text;
+
+  @override
+  String toString() => _text;
+}
+
+// ignore: one_member_abstracts
+abstract class Description {
+  bool isEmpty();
+}
+
+class TextDescription extends Description {
+  TextDescription(this._text);
+
+  final String _text;
+
+  @override
+  bool isEmpty() => _text.isEmpty;
+}
+
+class EmptyDescription extends Description {
+  @override
+  bool isEmpty() => true;
+}
+
+class Todos {
+  Todos(this._values);
+
+  factory Todos.empty() => Todos([]);
+
+  final List<Todo> _values;
+
+  Todos put(Todo t) => Todos([..._values.where((t2) => t2.id() != t.id()), t]);
+
+  List<Todo> selectCompleted() =>
+      _values.where((todo) => todo.isCompleted()).toList();
+
+  List<Todo> selectCanceled() =>
+      _values.where((todo) => todo.isCanceled()).toList();
+
+  List<Todo> selectNotFinished() =>
+      _values.where((todo) => !todo.isFinished()).toList();
+
+  bool isAllFinished() {
+    return selectNotFinished().isEmpty && selectCompleted().length > 1;
+  }
+}
 
 class Todo {
+  Todo(this._id, this._listID, this._labels, this._subject, this._description,
+      this._status, this._createdAt);
+
   final ID<Todo> _id;
+  final ID<DailyTodoList> _listID;
   final TodoLabels _labels;
   final Subject _subject;
   final Description _description;
   final Status _status;
   final DateTime _createdAt;
 
-  Todo(this._id, this._labels, this._subject, this._description, this._status,
-      this._createdAt);
-
   ID<Todo> id() => _id;
+
+  ID<DailyTodoList> listID() => _listID;
 
   TodoLabels labels() => _labels;
 
@@ -44,183 +100,194 @@ class Todo {
 
   bool isFinished() => status().isFinished();
 
-  Todo _changeStatus(Status status) =>
-      Todo(_id, _labels, _subject, _description, status, _createdAt);
+  bool isCompleted() => status().isCompleted();
 
-  Todo complete() => _changeStatus(status().complete());
+  bool isCanceled() => status().isCanceled();
 
-  Todo cancel() => _changeStatus(status().cancel());
+  bool isInProgress() => status().isInProgress();
+
+  bool hasLabel(Label label) => labels().contains(label);
+
+  WithEvent<TodoStatusChanged, Todo> _changeStatus(Status status) {
+    final todo =
+        Todo(_id, _listID, _labels, _subject, _description, status, _createdAt);
+    return WithEvent(TodoStatusChanged(todo.id(), todo.status()), todo);
+  }
+
+  WithEvent<TodoStatusChanged, Todo> complete(DateTime completedAt) =>
+      _changeStatus(status().complete(completedAt));
+
+  WithEvent<TodoStatusChanged, Todo> cancel(DateTime canceledAt) =>
+      _changeStatus(status().cancel(canceledAt));
+
+  WithEvent<TodoStatusChanged, Todo> start(DateTime startedAt) =>
+      _changeStatus(status().start(startedAt));
+
+  WithEvent<TodoStatusChanged, Todo> asNotStartedYet() =>
+      _changeStatus(status().asNotStartedYet());
 
   Todo changeSubject(Subject s) =>
-      Todo(_id, _labels, s, _description, _status, _createdAt);
+      Todo(_id, _listID, _labels, s, _description, _status, _createdAt);
 
-  Todo addDescription(Description d) =>
-      Todo(_id, _labels, _subject, d, _status, _createdAt);
+  Todo changeDescription(Description d) =>
+      Todo(_id, _listID, _labels, _subject, d, _status, _createdAt);
 
-  Todo addLabel(Label l) =>
-      Todo(_id, _labels.add(l), _subject, _description, _status, _createdAt);
-}
-
-class TodoBuilder {
-  final TimeGetter _timeGetter;
-  final TodoLabelsFactory<List<Label>> _labelsFactory;
-
-  Subject _subject;
-  Description _description;
-  List<Label> _labels;
-
-  TodoBuilder(this._timeGetter, this._labelsFactory);
-
-  TodoBuilder labels(List<Label> list) {
-    _labels = list;
-    return this;
-  }
-
-  TodoBuilder subject(Subject sub) {
-    _subject = sub;
-    return this;
-  }
-
-  TodoBuilder description(Description des) {
-    _description = des;
-    return this;
-  }
-
-  Todo build() {
-    final id = ID.create();
-    final status = NotStartedYet();
-    final createdAt = _timeGetter.now();
-    return Todo(id, _labelsFactory.create(_labels), _subject, _description,
-        status, createdAt);
-  }
-}
-
-abstract class TimeGetter {
-  DateTime now();
-}
-
-class TimeGetterDartCoreImpl extends TimeGetter {
-  @override
-  DateTime now() => DateTime.now();
-}
-
-abstract class TodoLabelsFactory<L extends Iterable> {
-  TodoLabels create(L l);
-}
-
-class TodoLabelsFactoryImpl extends TodoLabelsFactory<List<Label>> {
-  @override
-  TodoLabels create(List<Label> l) => TodoLabelsListImpl(l.toList());
+  Todo addLabel(Label l) => Todo(_id, _listID, _labels.add(l), _subject,
+      _description, _status, _createdAt);
 }
 
 abstract class TodoLabels {
   Iterable<Label> values();
 
   TodoLabels add(Label label);
+
+  bool contains(Label label);
 }
 
 class TodoLabelsListImpl extends TodoLabels {
-  final List<Label> _list;
-
   TodoLabelsListImpl(this._list);
+
+  final List<Label> _list;
 
   @override
   TodoLabels add(Label label) {
-    var copied = _list.toList();
+    final copied = _list.toList()..add(label);
     return TodoLabelsListImpl(copied);
   }
 
   @override
   Iterable<Label> values() => _list;
+
+  @override
+  bool contains(Label label) => _list.contains(label);
 }
 
 abstract class Status {
-  Status start();
-  Status complete();
-  Status cancel();
+  Status start(DateTime startedAt);
+
+  Status complete(DateTime completedAt);
+
+  Status cancel(DateTime canceledAt);
+
+  Status asNotStartedYet() => NotStarted();
 
   bool isCompleted();
+
   bool isCanceled();
+
+  bool isInProgress();
+
   bool isFinished() {
     return this is Completed || this is Cancelled;
   }
 }
 
-class NotStartedYet extends Status {
-  InProgress start() => InProgress(DateTime.now());
+class NotStarted extends Status {
+  @override
+  InProgress start(DateTime startedAt) => InProgress(startedAt);
 
-  cancel() => Cancelled(startedAt: DateTime.now(), cancelledAt: DateTime.now());
+  @override
+  Status cancel(DateTime canceledAt) =>
+      Cancelled(startedAt: canceledAt, cancelledAt: canceledAt);
 
-  Completed complete() =>
-      Completed(startedAt: DateTime.now(), completedAt: DateTime.now());
+  @override
+  Completed complete(DateTime completedAt) =>
+      Completed(startedAt: completedAt, completedAt: completedAt);
 
   @override
   bool isCanceled() => false;
 
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => false;
 }
 
 class InProgress extends Status {
-  final DateTime startedAt;
-
   InProgress(this.startedAt);
 
-  Completed complete() =>
-      Completed(startedAt: startedAt, completedAt: DateTime.now());
+  final DateTime startedAt;
 
-  Cancelled cancel() =>
-      Cancelled(startedAt: startedAt, cancelledAt: DateTime.now());
+  @override
+  Completed complete(DateTime completedAt) =>
+      Completed(startedAt: startedAt, completedAt: completedAt);
 
-  Status start() => this;
+  @override
+  Cancelled cancel(DateTime canceledAt) =>
+      Cancelled(startedAt: startedAt, cancelledAt: canceledAt);
+
+  @override
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => false;
+
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => true;
 }
 
 class Completed extends Status {
+  Completed({this.startedAt, this.completedAt});
+
   final DateTime startedAt;
   final DateTime completedAt;
 
-  Completed({this.startedAt, this.completedAt});
+  @override
+  Status cancel(DateTime canceledAt) =>
+      Cancelled(startedAt: startedAt, cancelledAt: canceledAt);
 
   @override
-  Status cancel() =>
-      Cancelled(startedAt: startedAt, cancelledAt: DateTime.now());
+  Status complete(DateTime completedAt) => this;
 
   @override
-  Status complete() => this;
-
-  @override
-  Status start() => this;
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => false;
+
   @override
   bool isCompleted() => true;
+
+  @override
+  bool isInProgress() => false;
 }
 
 class Cancelled extends Status {
+  Cancelled({this.startedAt, this.cancelledAt});
+
   final DateTime startedAt;
   final DateTime cancelledAt;
 
-  Cancelled({this.startedAt, this.cancelledAt});
+  @override
+  Status cancel(DateTime canceledAt) => this;
 
   @override
-  Status cancel() => this;
+  Status complete(DateTime completedAt) =>
+      Completed(startedAt: startedAt, completedAt: completedAt);
 
   @override
-  Status complete() =>
-      Completed(startedAt: startedAt, completedAt: DateTime.now());
-
-  @override
-  Status start() => this;
+  Status start(DateTime startedAt) => this;
 
   @override
   bool isCanceled() => true;
 
   @override
   bool isCompleted() => false;
+
+  @override
+  bool isInProgress() => false;
+}
+
+abstract class TodoCollection {
+  Future<void> store(Todo todo);
+
+  Future<Todo> get(ID<Todo> id);
+
+  Future<List<Todo>> getByListID(ID<DailyTodoList> id);
+
+  Future<List<Todo>> getAll();
 }

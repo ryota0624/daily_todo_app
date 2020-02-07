@@ -1,4 +1,19 @@
+import 'dart:async';
+
+import 'package:daily_todo_app/adapter/daily_todo_list_collection.dart';
+import 'package:daily_todo_app/event/event.dart';
+import 'package:daily_todo_app/service/navigation.dart';
+import 'package:daily_todo_app/todo.dart';
+import 'package:daily_todo_app/usecase/change_todo_status.dart';
+import 'package:daily_todo_app/usecase/create_todo.dart';
+import 'package:daily_todo_app/usecase/usecase.dart';
+import 'package:daily_todo_app/widget/component_container.dart' as component;
+import 'package:daily_todo_app/widget/todo_create_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'adapter/todo_collection.dart';
+import 'errors/enum_error.dart';
 
 void main() => runApp(MyApp());
 
@@ -7,105 +22,470 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+//      onGenerateRoute: onGenerateRoute([
+//        RouteWidgetBuilder.route<TodoDetailRoute>(
+//          TodoDetailPage.fromRoute,
+//        ),
+//        RouteWidgetBuilder.route<DailyTodoListRoute>(
+//            DailyTodoListPage.fromRoute),
+//      ]),
+        onGenerateRoute: routeSetting((dynamic route) {
+          route<TodoDetailRoute>(TodoDetailPage.fromRoute);
+          route<DailyTodoListRoute>(DailyTodoListPage.fromRoute);
+        }),
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: ChangeNotifierProvider<DailyTodoListScreenModel>.value(
+          value: DailyTodoListScreenModelFWidget(
+            container().resolve<DailyTodoListCollection>(),
+            container().resolve<TodoCollection>(),
+          ),
+          child: Consumer<DailyTodoListScreenModel>(
+            builder: (ctx, model, _) =>
+                DailyTodoListScreen(title: 'Todo App', model: model),
+          ),
+        ));
+  }
+}
+
+abstract class DailyTodoListForView {
+  Date get date;
+}
+
+class DailyTodoListForViewWithEntity extends DailyTodoListForView {
+  DailyTodoListForViewWithEntity(DailyTodoList entity) : _entity = entity;
+
+  final DailyTodoList _entity;
+
+  ID<DailyTodoList> get id => _entity.id;
+
+  @override
+  Date get date => _entity.date;
+}
+
+class EmptyDailyTodoListForView extends DailyTodoListForView {
+  EmptyDailyTodoListForView(Date date): _date = date;
+  final Date _date;
+
+  @override
+  Date get date => _date;
+}
+
+abstract class DailyTodoListScreenModel
+    with WithEventSubscriber, ChangeNotifier {
+  DailyTodoListScreenModel(this.dailyTodoListCollection, this.todoCollection) {
+    _subscribeID = eventSubscriber.subscribe((Event evt) {
+      // TODO(ryota0624): eventの種類によって List or Todoのreloadを分ける
+      reloadTodos();
+    });
+  }
+
+  final TodoCollection todoCollection;
+  final DailyTodoListCollection dailyTodoListCollection;
+
+  // mutable
+  SubscribeID _subscribeID;
+  DailyTodoList _selected;
+  Todos _todos = Todos.empty();
+
+  // getters
+  Todos get todos => _todos;
+
+  DailyTodoListForView get selectedList {
+    if (_selected == null) {
+      return EmptyDailyTodoListForView(Date.today());
+    }
+    return DailyTodoListForViewWithEntity(_selected);
+  }
+
+  Future<void> reloadTodos() async {
+    final todos = await (_selected == null
+        ? todoCollection.getAll()
+        : todoCollection.getByListID(_selected.id));
+    _todos = Todos(todos);
+    notifyListeners();
+  }
+
+  Future<void> reloadDailyTodoList() async {
+    if (_selected == null) {
+      _selected = await dailyTodoListCollection.getByDate(Date.today());
+    } else {
+      _selected = await dailyTodoListCollection.get(_selected.id);
+    }
+    _todos = Todos.empty();
+    notifyListeners();
+
+    await reloadTodos();
+  }
+
+  @override
+  void dispose() {
+    eventSubscriber.remove(_subscribeID);
+    super.dispose();
+  }
+}
+
+class DailyTodoListScreenModelFWidget extends DailyTodoListScreenModel
+    with MixinEventSubscriber {
+  DailyTodoListScreenModelFWidget(
+    DailyTodoListCollection dailyTodoListCollection,
+    TodoCollection todoCollection,
+  ) : super(dailyTodoListCollection, todoCollection);
+}
+
+class DailyTodoListScreen extends StatefulWidget {
+  const DailyTodoListScreen({Key key, this.title, this.model})
+      : super(key: key);
+  final String title;
+  final DailyTodoListScreenModel model;
+
+  @override
+  _DailyTodoListScreen createState() => _DailyTodoListScreen();
+}
+
+class _DailyTodoListScreen extends State<DailyTodoListScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      body: ConstrainedBox(
+          constraints: const BoxConstraints.expand(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: DailyTodoListWidgetContainer(
+              list: widget.model.selectedList,
+              todos: widget.model.todos,
+            ),
+          )),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
+// TODO(ryota0624): Container.of(ctx)から取れるようにしたい
+component.Container container() {
+  return component.Container()
+      .add(TimeGetter, TimeGetterDartCoreImpl())
+      .add(TodoLabelsFactory, TodoLabelsFactoryImpl())
+      .add(TodoCollection, TodoCollectionOnMap())
+      .add(DailyTodoListCollection, DailyTodoListCollectionOnMap())
+      .build<TodoFactory>((resolver) =>
+          TodoFactory(resolver<TimeGetter>(), resolver<TodoLabelsFactory>()))
+      .build<CreateTodoUseCase>((resolver) => CreateTodoUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            todoFactory: resolver<TodoFactory>(),
+          ))
+      .build<ChangeTodoStatusUseCase>((resolver) => ChangeTodoStatusUseCaseImpl(
+            todoCollection: resolver<TodoCollection>(),
+            timeGetter: resolver<TimeGetter>(),
+          ));
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+component.Container c = container();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+class DailyTodoListWidgetContainer extends StatelessWidget {
+  const DailyTodoListWidgetContainer({
+    Key key,
+    @required this.list,
+    @required this.todos,
+  }) : super(key: key);
+
+  final DailyTodoListForView list;
+  final Todos todos;
+
+  ChangeTodoStatusUseCase get changeTodoStatusUseCase =>
+      c.resolve<ChangeTodoStatusUseCase>();
+
+  void onPressDone(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.complete,
+    ));
+  }
+
+  void onPressCancel(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.cancel,
+    ));
+  }
+
+  void onPressStart(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.start,
+    ));
+  }
+
+  void onPressReturnNotStartedYet(Todo todo) {
+    changeTodoStatusUseCase.put(ChangeTodoStatusParam(
+      todoID: todo.id(),
+      status: ChangeTodoStatus.start,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
+    final l = list;
+    final listID = l is DailyTodoListForViewWithEntity ? l.id : null;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Container(
+          child: TodoListWidget(
+            todos: todos,
+            onPressDone: onPressDone,
+            onPressCancel: onPressCancel,
+            onPressStart: onPressStart,
+            onPressReturnNotStartedYet: onPressReturnNotStartedYet,
+          ),
+          alignment: Alignment.topCenter,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        Container(
+          child: ChangeNotifierProvider<TodoCreationModel>.value(
+            value: TodoCreationModelFWidget(c.resolve<CreateTodoUseCase>()),
+            child: TodoCreateForm(
+              listID: listID,
+            ),
+          ),
+          alignment: Alignment.bottomCenter,
+        ),
+      ],
     );
+  }
+}
+
+class CreateTodoUseCaseImpl extends CreateTodoUseCase
+    with MixinEventPublisher, NoneOutputPort<CreateTodoResult> {
+  CreateTodoUseCaseImpl({
+    @required TodoFactory todoFactory,
+    @required TodoCollection todoCollection,
+  }) : super(todoFactory, todoCollection);
+}
+
+class ChangeTodoStatusUseCaseImpl extends ChangeTodoStatusUseCase
+    with MixinEventPublisher, NoneOutputPort<ChangeTodoStatusResult> {
+  ChangeTodoStatusUseCaseImpl({
+    @required TodoCollection todoCollection,
+    @required TimeGetter timeGetter,
+  }) : super(todoCollection, timeGetter);
+}
+
+class TodoCompleted extends UiEvent {}
+
+class TodoCanceled extends UiEvent {}
+
+class TodoReturnNotStartedYet extends UiEvent {}
+
+class TodoListWidget extends StatelessWidget {
+  const TodoListWidget({
+    Key key,
+    @required this.todos,
+    @required this.onPressDone,
+    @required this.onPressStart,
+    @required this.onPressCancel,
+    @required this.onPressReturnNotStartedYet,
+  }) : super(key: key);
+
+  final Todos todos;
+
+  final TodoApplyFunction onPressDone;
+
+  final TodoApplyFunction onPressStart;
+
+  final TodoApplyFunction onPressCancel;
+
+  final TodoApplyFunction onPressReturnNotStartedYet;
+
+  Widget _listView(String label, List<Todo> todos) {
+    if (todos.isEmpty) {
+      return Container();
+    }
+    return Column(children: [
+      Text(label),
+      ListView(shrinkWrap: true, children: [
+        for (var todo in todos)
+          TodoListItem(
+            todo: todo,
+            key: ObjectKey(todo),
+            onPressDone: onPressDone,
+            onPressCancel: onPressCancel,
+            onPressReturnNotStartedYet: onPressReturnNotStartedYet,
+            onPressStart: onPressStart,
+          ),
+      ])
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      shrinkWrap: true,
+      children: <Widget>[
+        _listView('未完了', todos.selectNotFinished()),
+        _listView('完了', todos.selectCompleted()),
+        _listView('キャンセル済', todos.selectCanceled()),
+      ],
+    );
+  }
+}
+
+typedef TodoApplyFunction = void Function(Todo todo);
+
+class TodoListItem extends StatelessWidget {
+  const TodoListItem(
+      {Key key,
+      @required this.todo,
+      @required this.onPressDone,
+      @required this.onPressStart,
+      @required this.onPressCancel,
+      @required this.onPressReturnNotStartedYet})
+      : super(key: key);
+  final Todo todo;
+
+  final TodoApplyFunction onPressDone;
+
+  final TodoApplyFunction onPressStart;
+
+  final TodoApplyFunction onPressCancel;
+
+  final TodoApplyFunction onPressReturnNotStartedYet;
+
+  static const double statusIconSize = 24;
+
+  Widget get statusIcon {
+    if (todo.isCompleted()) {
+      return Icon(
+        Icons.done,
+        color: Colors.green,
+        size: statusIconSize,
+      );
+    }
+
+    if (todo.isCanceled()) {
+      return Icon(
+        Icons.cancel,
+        color: Colors.red,
+        size: statusIconSize,
+      );
+    }
+
+    if (todo.isInProgress()) {
+      return Icon(
+        Icons.timer,
+        color: Colors.green,
+        size: statusIconSize,
+      );
+    }
+
+    return GestureDetector(
+        onTap: () => onPressDone(todo),
+        child: Icon(
+          Icons.done,
+          color: Colors.grey,
+          size: statusIconSize,
+        ));
+  }
+
+  void onSelectedStatusChangeChoice(StatusChangeChoice c) {
+    switch (c) {
+      case StatusChangeChoice.asCancel:
+        onPressCancel(todo);
+        break;
+      case StatusChangeChoice.asNoStartedYet:
+        onPressReturnNotStartedYet(todo);
+        break;
+      case StatusChangeChoice.asComplete:
+        onPressDone(todo);
+        break;
+      case StatusChangeChoice.asInProgress:
+        onPressStart(todo);
+        break;
+    }
+  }
+
+  Widget get statusChangeMenu {
+    return PopupMenuButton(
+      onSelected: onSelectedStatusChangeChoice,
+      itemBuilder: (BuildContext context) {
+        return StatusChangeChoice.values.map((StatusChangeChoice c) {
+          return PopupMenuItem(
+            child: Text(c.asString()),
+            value: c,
+          );
+        }).toList();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Padding(child: statusIcon, padding: const EdgeInsets.only(right: 10)),
+      Text(todo.subject().toString()),
+      Expanded(
+          child: Container(
+        child: statusChangeMenu,
+        alignment: Alignment.centerRight,
+      ))
+    ]);
+  }
+}
+
+enum StatusChangeChoice {
+  asCancel,
+  asNoStartedYet,
+  asComplete,
+  asInProgress,
+}
+
+extension on StatusChangeChoice {
+  String asString() {
+    switch (this) {
+      case StatusChangeChoice.asCancel:
+        return 'キャンセル';
+      case StatusChangeChoice.asNoStartedYet:
+        return '未着手';
+      case StatusChangeChoice.asComplete:
+        return '完了';
+      case StatusChangeChoice.asInProgress:
+        return '実施中';
+      default:
+        throw InvalidEnumArgumentException(this);
+    }
+  }
+}
+
+class TodoDetailPage extends StatelessWidget {
+  const TodoDetailPage({Key key, this.todoID}) : super(key: key);
+
+  // ignore: prefer_constructors_over_static_methods
+  static TodoDetailPage fromRoute(TodoDetailRoute r) =>
+      TodoDetailPage(todoID: r.todoID);
+  final ID<Todo> todoID;
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO(ryota0624): implement build
+    return null;
+  }
+}
+
+class DailyTodoListPage extends StatelessWidget {
+  const DailyTodoListPage({Key key, this.date}) : super(key: key);
+
+  // ignore: prefer_constructors_over_static_methods
+  static DailyTodoListPage fromRoute(DailyTodoListRoute r) => DailyTodoListPage(
+        date: r.date,
+      );
+  final Date date;
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO(ryota0624): implement build
+    return null; // DailyTodoListWidgetContainer(list: null, todos: null);
   }
 }
