@@ -50,6 +50,29 @@ class MyApp extends StatelessWidget {
   }
 }
 
+abstract class DailyTodoListForView {
+  Date get date;
+}
+
+class DailyTodoListForViewWithEntity extends DailyTodoListForView {
+  DailyTodoListForViewWithEntity(DailyTodoList entity) : _entity = entity;
+
+  final DailyTodoList _entity;
+
+  ID<DailyTodoList> get id => _entity.id;
+
+  @override
+  Date get date => _entity.date;
+}
+
+class EmptyDailyTodoListForView extends DailyTodoListForView {
+  EmptyDailyTodoListForView(Date date): _date = date;
+  final Date _date;
+
+  @override
+  Date get date => _date;
+}
+
 abstract class DailyTodoListScreenModel
     with WithEventSubscriber, ChangeNotifier {
   DailyTodoListScreenModel(this.dailyTodoListCollection, this.todoCollection) {
@@ -65,13 +88,17 @@ abstract class DailyTodoListScreenModel
   // mutable
   SubscribeID _subscribeID;
   DailyTodoList _selected;
-  ID<DailyTodoList> selectedListID;
   Todos _todos = Todos.empty();
 
   // getters
   Todos get todos => _todos;
 
-  DailyTodoList get selectedList => _selected;
+  DailyTodoListForView get selectedList {
+    if (_selected == null) {
+      return EmptyDailyTodoListForView(Date.today());
+    }
+    return DailyTodoListForViewWithEntity(_selected);
+  }
 
   Future<void> reloadTodos() async {
     final todos = await (_selected == null
@@ -119,10 +146,6 @@ class DailyTodoListScreen extends StatefulWidget {
 }
 
 class _DailyTodoListScreen extends State<DailyTodoListScreen> {
-//  final TodoCollection _todoCollection = c.resolve<TodoCollection>();
-//  final DailyTodoListCollection _dailyTodoListCollection =
-//      c.resolve<DailyTodoListCollection>();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,7 +193,7 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
     @required this.todos,
   }) : super(key: key);
 
-  final DailyTodoList list;
+  final DailyTodoListForView list;
   final Todos todos;
 
   ChangeTodoStatusUseCase get changeTodoStatusUseCase =>
@@ -206,6 +229,8 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = list;
+    final listID = l is DailyTodoListForViewWithEntity ? l.id : null;
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
@@ -223,7 +248,7 @@ class DailyTodoListWidgetContainer extends StatelessWidget {
           child: ChangeNotifierProvider<TodoCreationModel>.value(
             value: TodoCreationModelFWidget(c.resolve<CreateTodoUseCase>()),
             child: TodoCreateForm(
-              listID: list.id,
+              listID: listID,
             ),
           ),
           alignment: Alignment.bottomCenter,

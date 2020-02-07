@@ -5,10 +5,6 @@ import 'package:daily_todo_app/usecase/usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-mixin Notifier {
-  void notifyListeners();
-}
-
 abstract class TodoCreationModel implements ChangeNotifier {
   TodoCreationModel(this.inputPort);
 
